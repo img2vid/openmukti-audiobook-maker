@@ -51,7 +51,10 @@ class NativeReleaseFixTests(unittest.TestCase):
 
     def test_embedded_macos_tesseract_has_separate_dylib_closure(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder)
+            # macOS /var -> /private/var and Windows short names -> long
+            # names. Canonicalize the fixture before the production helper
+            # (which deliberately calls resolve()) sees any path.
+            root=Path(folder).resolve()
             original=root/'brew/bin/tesseract'; original.parent.mkdir(parents=True)
             original.write_bytes(b'original')
             lib=root/'brew/lib';lib.mkdir(parents=True)
@@ -59,17 +62,18 @@ class NativeReleaseFixTests(unittest.TestCase):
             leptonica=lib/'liblept.6.dylib';leptonica.write_bytes(b'lept')
             staged=root/'bundle/_internal/tesseract/tesseract'
             staged.parent.mkdir(parents=True);staged.write_bytes(b'rewritten')
-            deps={original:[str(tesseract)], tesseract:[str(leptonica),
-                   '/usr/lib/libSystem.B.dylib'], leptonica:[]}
+            deps={original.resolve():[str(tesseract.resolve())],
+                  tesseract.resolve():[str(leptonica.resolve()),
+                   '/usr/lib/libSystem.B.dylib'], leptonica.resolve():[]}
             with patch.object(macos_tesseract,'_linked_libraries',
-                              side_effect=lambda p: deps[p]), \
+                              side_effect=lambda p: deps[Path(p).resolve()]), \
                  patch.object(macos_tesseract.subprocess,'run') as runner:
                 self.assertEqual(
                     macos_tesseract.isolate_tesseract(root/'bundle',original),staged)
             self.assertEqual(staged.read_bytes(),b'original')
             self.assertEqual((staged.parent/'lib'/tesseract.name).read_bytes(),b'proper-ABI')
             changes=[call.args[0] for call in runner.call_args_list]
-            self.assertIn(['install_name_tool','-change',str(tesseract),
+            self.assertIn(['install_name_tool','-change',str(tesseract.resolve()),
                            '@loader_path/lib/'+tesseract.name,str(staged)], changes)
             self.assertEqual(sum(c[0]=='codesign' for c in changes),3)
 
