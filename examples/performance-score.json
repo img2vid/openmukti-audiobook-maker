@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Narrator": {"engine":"flite","voice":"slt"},
+    "Mira": {"extends":"Narrator","voice":"awb"}
+  },
+  "test_text":"The book beside the window is mine.",
+  "takes":{"gentle":{"Mira":{"extends":"Narrator","voice":"rms","emotion":"calm"}}},
+  "scenes":[
+    {"ssml":"<speak>The classroom was quiet.<break time=\"200ms\"/><voice name=\"Mira\"><emphasis level=\"moderate\">Here</emphasis> is your book.</voice></speak>"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "duck_music": true,
+  "markers": [{"time": 1.2, "label": "Ambience enters"}],
+  "tracks": [
+    {"file": "chapter.wav", "role": "narration", "start": 0, "gain": 1},
+    {"file": "room-tone.wav", "role": "ambience", "start": 1.2, "duration": 8,
+     "gain": 0.2, "fade_in": 0.4, "fade_out": 0.8, "loop": true, "loop_crossfade": 0.1,
+     "credit": "Enter the recordist", "license": "Enter the recording's license"}
+  ]
+}
