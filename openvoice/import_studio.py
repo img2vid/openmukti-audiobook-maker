@@ -92,7 +92,12 @@ def batch_read(paths,preset=None):
 class FolderInbox:
     """Require an unchanged size and modification time across two scans."""
     def __init__(self,folder):
-        self.folder=Path(folder).resolve(strict=True)
+        # Preserve the caller's lexical path. resolve() substitutes /private/var
+        # for /var on macOS and expands Windows 8.3 names, resulting in
+        # inconsistent paths returned from poll() for the very same file.
+        self.folder=Path(folder).expanduser()
+        if not self.folder.is_dir():
+            raise NotADirectoryError(f'Folder inbox does not exist: {self.folder}')
         self.previous={}
         self.seen=set()
 

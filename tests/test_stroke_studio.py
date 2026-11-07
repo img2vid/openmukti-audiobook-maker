@@ -20,8 +20,8 @@ class StrokeStudioTests(unittest.TestCase):
             self.assertEqual(loaded.lookup('ক্ষ')[1].points[0],(.15,.8,.9))
             self.assertTrue(loaded.lookup('あ'))
             self.assertIsNone(loaded.lookup('missing'))
-            bad=output.read_text().replace('0.8','99999')
-            output.write_text(bad)
+            bad=output.read_text(encoding='utf-8').replace('0.8','99999')
+            output.write_text(bad, encoding='utf-8')
             with self.assertRaises(ValueError):load_stroke_library(output)
 
     def test_font_pixels_are_not_in_final_stroke_output(self):

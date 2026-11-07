@@ -4,6 +4,7 @@ import io
 import json
 import os
 import sqlite3
+from contextlib import closing
 import tempfile
 import threading
 import unittest
@@ -58,7 +59,7 @@ class Caching(Workspace):
         render_text('Hello.',wav,backend,SpeechSettings(),opts)
         self.assertEqual(backend.calls,1)
         db=self.root/'cache'/'speech-cache.sqlite3'
-        with sqlite3.connect(db) as conn:
+        with closing(sqlite3.connect(db)) as conn, conn:
             conn.execute("UPDATE chunks SET audio=X'00'")
         render_text('Hello.',wav,backend,SpeechSettings(),opts)
         render_text('Hello.',wav,backend,SpeechSettings(rate=1),opts)
@@ -73,7 +74,7 @@ class Caching(Workspace):
         self.assertFalse((self.root/'new.wav').exists())
         backend.fail=0
         render_text(text,self.root/'new.wav',backend,SpeechSettings(),opts)
-        with sqlite3.connect(self.root/'cache'/'speech-cache.sqlite3') as conn:
+        with closing(sqlite3.connect(self.root/'cache'/'speech-cache.sqlite3')) as conn, conn:
             rows=conn.execute('SELECT count(*) FROM chunks').fetchone()[0]
         self.assertEqual(backend.calls,rows+1)
     def test_model_weights_change_key(self):

@@ -807,7 +807,7 @@ def build(args):
                 retained.append(name)
         requested = retained
     report = {'application': 'Openmukti Audiobook Maker', 'version': version(),
-              'host': family, 'host_description': os.uname().version, 'architecture': architecture(),
+              'host': family, 'host_description': platform.uname().version, 'architecture': architecture(),
               'profile': args.profile, 'python_embedded': args.profile == 'frozen',
               'libc': platform.libc_ver() if family == 'linux' else None,
               'runtime_verified': False, 'results': skipped, 'status': 'failed'}

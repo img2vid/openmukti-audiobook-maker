@@ -59,7 +59,7 @@ class AnimatedVideoTests(unittest.TestCase):
             cues=load_cues(root/'aligned.srt',4)
             self.assertEqual(len(cues),2)
             self.assertEqual(cues[1].text,'世界')
-            (root/'aligned.vtt').write_text('WEBVTT\n\n00:00:00.300 --> 00:00:01.000\nمرحبا\n')
+            (root/'aligned.vtt').write_text('WEBVTT\n\n00:00:00.300 --> 00:00:01.000\nمرحبا\n', encoding='utf-8')
             self.assertEqual(load_cues(root/'aligned.vtt',4)[0].text,'مرحبا')
 
     def test_rejects_out_of_audio_cues(self):

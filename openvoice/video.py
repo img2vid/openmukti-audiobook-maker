@@ -155,11 +155,13 @@ def _concat_image_list(images: list[Path], duration: float, target: Path) -> Non
 
 def render_video(images: list[str | Path], output: str | Path, *, audio: str | Path | None = None, text: str = '', engine: SpeechEngine | None = None, settings: SpeechSettings | None = None, speech_options: JobOptions = JobOptions(), video_options: VideoOptions = VideoOptions(), control: RunControl | None = None, progress: Callable[[int, int], None] | None = None, status=None) -> Path:
     emit(status, 0, 'Preparing audiobook video')
+    # Validate the user's inputs before probing external video tools so that
+    # a missing FFmpeg installation never masks a more actionable input error.
+    if not images and video_options.animation == 'none' and not video_options.storyboard:
+        raise ValueError('Choose at least one cover image, or enable animated text mode')
     ffmpeg = binary('ffmpeg')
     if not ffmpeg:
         raise RuntimeError('FFmpeg is required for audiobook videos. Install it or place FFmpeg beside the executable.')
-    if not images and video_options.animation == 'none' and not video_options.storyboard:
-        raise ValueError('Choose at least one cover image, or enable animated text mode')
     picture_paths = [Path(p).expanduser().resolve() for p in images]
     for path in picture_paths:
         if path.suffix.lower() not in IMAGE_FORMATS or not path.is_file():

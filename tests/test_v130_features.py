@@ -141,7 +141,7 @@ class ReportTests(unittest.TestCase):
 
     def test_command_script_check(self):
         file = self.root/'text.txt'
-        file.write_text('Hello, বাংলা!')
+        file.write_text('Hello, বাংলা!', encoding='utf-8')
         report = self.root/'report.json'
         self.assertEqual(cli_main(['script-check', '-f', str(file), '-w', str(report)]), 0)
         self.assertTrue(json.loads(report.read_text())['mixed_paragraph_count'])
@@ -165,7 +165,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn('Openmukti',text)
 
         file = self.root/'text.txt'
-        file.write_text('Hello, বাংলা!')
+        file.write_text('Hello, বাংলা!', encoding='utf-8')
         report = self.root/'report.json'
         self.assertEqual(cli_main(['script-check', '-f', str(file), '-w', str(report)]), 0)
         self.assertTrue(json.loads(report.read_text())['mixed_paragraph_count'])

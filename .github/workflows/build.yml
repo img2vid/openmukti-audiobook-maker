@@ -1,4 +1,7 @@
 name: Build portable releases
+# Make multilingual text handling deterministic on Windows, macOS and Linux.
+env:
+  PYTHONUTF8: '1'
 permissions:
   contents: read
 on:

@@ -259,8 +259,17 @@ class FakeInferenceTests(unittest.TestCase):
         def write(path,rate,audio):
             saved.append((path,rate))
             Path(path).write_bytes(b'RIFF'+b'0'*44)
-        with patch.dict(sys.modules, {'pocket_tts':types.SimpleNamespace(TTSModel=Model),
-                                      'scipy.io.wavfile':types.SimpleNamespace(write=write)}):
+        scipy_stub = types.ModuleType('scipy')
+        scipy_stub.__path__ = []
+        io_stub = types.ModuleType('scipy.io')
+        io_stub.__path__ = []
+        wavfile_stub = types.ModuleType('scipy.io.wavfile')
+        wavfile_stub.write = write
+        scipy_stub.io = io_stub
+        io_stub.wavfile = wavfile_stub
+        with patch.dict(sys.modules, {'pocket_tts': types.SimpleNamespace(TTSModel=Model),
+                                      'scipy': scipy_stub, 'scipy.io': io_stub,
+                                      'scipy.io.wavfile': wavfile_stub}):
             self.worker.synthesize({'engine':'pocket','text':'Hello','voice':'alba','output':self.output('pocket')})
             self.worker.synthesize({'engine':'pocket','text':'Again','voice':'alba','output':self.output('pocket')})
         self.assertEqual(len(models),1)
