@@ -4,6 +4,7 @@ import sqlite3
 import zipfile
 import subprocess
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -864,7 +865,27 @@ def _production_command(args) -> int:
     return 0
 
 
+def _configure_windows_text_streams() -> None:
+    """Keep multilingual argparse output usable when EXE stdout is redirected.
+
+    PyInstaller's Windows console executable can inherit an ANSI code page
+    (such as cp1252) from the runner, even when Python UTF-8 mode was selected
+    for the interpreter launching it. Leave interactive terminals alone.
+    """
+    if os.name != 'nt':
+        return
+    for stream in (sys.stdout, sys.stderr):
+        if stream is None or not hasattr(stream, 'reconfigure'):
+            continue
+        try:
+            if not stream.isatty():
+                stream.reconfigure(encoding='utf-8', errors='replace')
+        except (AttributeError, OSError, ValueError):
+            pass
+
+
 def main(argv: list[str] | None=None) -> int:
+    _configure_windows_text_streams()
     from .desktop_prefs import activate
     activate()
     argv = list(argv if argv is not None else sys.argv[1:])
