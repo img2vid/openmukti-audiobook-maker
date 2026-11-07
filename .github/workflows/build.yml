@@ -183,10 +183,12 @@ jobs:
           release: '14.4'
           arch: ${{ matrix.arch }}
           usesh: true
+          sync: rsync
+          copyback: true
           prepare: pkg install -y ca_root_nss python311
           run: sh scripts/ci_vm.sh
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: Openmukti-FreeBSD-${{ matrix.arch }}-system-runtime
           path: dist/
@@ -207,10 +209,12 @@ jobs:
           release: '7.9'
           arch: ${{ matrix.arch }}
           usesh: true
+          sync: rsync
+          copyback: true
           prepare: pkg_add -I python%3.13
           run: sh scripts/ci_vm.sh
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: Openmukti-OpenBSD-${{ matrix.arch }}-system-runtime
           path: dist/
@@ -231,10 +235,12 @@ jobs:
           release: '10.1'
           arch: ${{ matrix.arch }}
           usesh: true
+          sync: rsync
+          copyback: true
           prepare: /usr/sbin/pkg_add -u mozilla-rootcerts-openssl python312
           run: sh scripts/ci_vm.sh
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: Openmukti-NetBSD-${{ matrix.arch }}-system-runtime
           path: dist/
@@ -251,10 +257,12 @@ jobs:
           release: '6.4.2'
           arch: x86_64
           usesh: true
+          sync: rsync
+          copyback: true
           prepare: pkg install -y ca_root_nss python311
           run: sh scripts/ci_vm.sh
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: Openmukti-DragonFly-x86_64-system-runtime
           path: dist/
@@ -271,10 +279,12 @@ jobs:
           release: '11.4-gcc'
           arch: x86_64
           usesh: true
+          sync: rsync
+          copyback: true
           prepare: pkg install --accept runtime/python-311 || test $? -eq 4
           run: sh scripts/ci_vm.sh
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: Openmukti-Solaris-x86_64-system-runtime
           path: dist/
@@ -291,10 +301,12 @@ jobs:
           release: 'r151054-build'
           arch: x86_64
           usesh: true
+          sync: rsync
+          copyback: true
           prepare: pkg install --accept runtime/python-311 || test $? -eq 4
           run: sh scripts/ci_vm.sh
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: Openmukti-illumos-x86_64-system-runtime
           path: dist/

@@ -93,12 +93,20 @@ def notices(destination):
 
 
 def tesseract_data(binary):
+    # Ubuntu 22.04 ships traineddata under 4.00 despite running Tesseract 5.
+    # Other distributions and Homebrew use a versioned or unversioned tree.
     candidates = [binary.parent / 'tessdata', binary.parent.parent / 'share/tessdata',
-                  Path('/usr/share/tesseract-ocr/5/tessdata'), Path('/usr/share/tessdata'),
-                  Path('/usr/local/share/tessdata'), Path('/opt/homebrew/share/tessdata')]
+                  Path('/usr/share/tessdata'), Path('/usr/local/share/tessdata'),
+                  Path('/opt/homebrew/share/tessdata')]
+    for prefix in (Path('/usr/share/tesseract-ocr'),
+                   Path('/usr/local/share/tesseract-ocr'),
+                   Path('/opt/homebrew/share/tesseract-ocr')):
+        if prefix.is_dir():
+            candidates.extend(sorted(prefix.glob('*/tessdata')))
     configured = os.environ.get('TESSDATA_PREFIX')
     if configured:
-        candidates.insert(0, Path(configured))
+        parent = Path(configured).expanduser()
+        candidates[:0] = [parent, parent / 'tessdata']
     for directory in candidates:
         if all((directory / f'{lang}.traineddata').is_file() for lang in ('eng', 'osd')):
             return directory
@@ -238,8 +246,12 @@ def verify(payload, profile, gui, strict=True):
         report = DIST / 'runtime-check.json'
         # Only the frozen program can attest that its libraries and OCR engine are embedded.
         run(payload / APP_NAME, '--portable-check', report, env=env)
-        value = json.loads(report.read_text())
-        if not value.get('ok'): raise RuntimeError('Native bundled runtime verification failed')
+        value = json.loads(report.read_text(encoding='utf-8'))
+        if not value.get('ok'):
+            failed = {name: status for name, status in value.get('checks', {}).items()
+                      if not status.get('ok')}
+            raise RuntimeError('Native bundled runtime verification failed: '
+                               + json.dumps(failed, ensure_ascii=False))
         return value
     env = os.environ.copy()
     # Import from the staged ZIP, not the checkout. Report every unavailable provider.
@@ -315,13 +327,15 @@ def python_distribution(kind):
     # Keep packaging tools isolated from the application's build environment.
     from .auto_dependencies import ensure_pip
     ensure_pip(python)
-    if subprocess.run([str(python), '-c', 'import build'], capture_output=True).returncode:
-        run(python, '-m', 'pip', 'install', '--disable-pip-version-check', 'build')
+    # Never run the PyPA `build` module from the repository root: our own
+    # top-level build.py would shadow it, producing an argparse error instead.
+    if subprocess.run([str(python), '-c', 'import build'], cwd=WORK, capture_output=True).returncode:
+        run(python, '-m', 'pip', 'install', '--disable-pip-version-check', 'build', cwd=WORK)
     output = WORK / ('python-dist-' + kind)
     if output.exists():
         shutil.rmtree(output)
     output.mkdir(parents=True)
-    run(python, '-m', 'build', '--' + kind, '--outdir', output, ROOT)
+    run(python, '-m', 'build', '--' + kind, '--outdir', output, ROOT, cwd=WORK)
     files = sorted(output.iterdir())
     if len(files) != 1 or not files[0].is_file():
         raise RuntimeError(f'Expected one {kind} artifact, found {len(files)}')

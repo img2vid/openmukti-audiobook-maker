@@ -133,7 +133,8 @@ def check_runtime(*, require_frozen=True, gui=False):
         embedded(find_tesseract())
         state=ocr_status()
         if not state['available'] or not {'eng','osd'}.issubset(state['languages']):
-            raise RuntimeError('Embedded Tesseract or eng/osd traineddata is missing')
+            raise RuntimeError('Embedded Tesseract or eng/osd traineddata is missing: '
+                               + json.dumps(state, ensure_ascii=False))
         scan=resources.files('openvoice').joinpath('resources','portable-ocr-check.png')
         with resources.as_file(scan) as source:
             text=import_ocr(source,OCRSettings(psm=6,auto_rotate=False,deskew=False)).text
