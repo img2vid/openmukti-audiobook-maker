@@ -350,7 +350,7 @@ jobs:
       contents: write
       actions: read
     steps:
-      - name: Create draft version or CI release
+      - name: Create an accessible prerelease for verified build artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -366,12 +366,15 @@ jobs:
             gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" \
               --title "Openmukti build #${{ github.run_number }} (uploading)" \
               --notes "Uploading build files. Verification is not complete." \
-              --draft --prerelease
+              --prerelease
           fi
 
   release-upload:
     needs: [release-create]
-    if: ${{ needs.release-create.result == 'success' }}
+    # Always evaluate: optional native-runner jobs can be skipped upstream.
+    # Without always(), Actions silently skips this matrix despite a
+    # successful release-create job.
+    if: ${{ always() && needs.release-create.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -457,7 +460,7 @@ jobs:
           title=$(python -c 'import json; print(json.load(open("release-notes.json"))["title"])')
           count=$(python -c 'import json; print(len(json.load(open("release-notes.json"))["uploaded"]))')
           if [ "$count" -eq 0 ]; then
-            echo 'No valid platform artifacts uploaded; retaining an unpublished draft.' >&2
+            echo 'No valid platform artifacts uploaded; keeping the prerelease marked incomplete.' >&2
             exit 1
           fi
           prerelease=$(python -c 'import json; print(str(json.load(open("release-notes.json"))["prerelease"]).lower())')
