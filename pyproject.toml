@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmukti-audiobook-maker"
+version = "1.2.0"
+description = "Offline audiobook maker with GUI, CLI and neural voice support"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [{name = "Aishik Dutta"}]
+keywords = ["text-to-speech", "tts", "sapi", "espeak", "piper", "gui", "offline"]
+classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License", "Topic :: Multimedia :: Sound/Audio :: Speech"]
+
+[project.optional-dependencies]
+pdf = ["pypdf>=5"]
+ocr = ["Pillow>=10.4", "numpy>=1.26", "opencv-python-headless>=4.10", "pypdfium2>=4.30"]
+rtf = ["striprtf>=0.0.26"]
+languages = ["lingua-language-detector>=2.0", "Babel>=2.10", "num2words>=0.5.13"]
+video = ["Pillow>=10.4", "fonttools>=4.0", "regex>=2024.0"]
+ipa = ["piper-tts>=1.2"]
+studio = ["Pillow>=10.4", "numpy>=1.26", "psutil>=5.9", "cryptography>=42", "mutagen>=1.47", "tkinterdnd2>=0.4", "Babel>=2.10", "num2words>=0.5.13"]
+security = ["cryptography>=42"]
+opencl = ["numpy>=1.26", "pyopencl>=2023.1"]
+voice-control = ["vosk>=0.3.45", "sounddevice>=0.4.6"]
+
+[project.scripts]
+openvoice = "openvoice.cli:main"
+openmukti = "openvoice.cli:main"
+openvoice-cli = "openvoice.cli:main"
+
+[project.gui-scripts]
+openvoice-gui = "openvoice.gui:main"
+openmukti-gui = "openvoice.gui:main"
+
+[project.entry-points."openvoice.engines"]
+
+[tool.setuptools.packages.find]
+include = ["openvoice*"]
+
+[tool.setuptools.package-data]
+openvoice = ["resources/*.ps1", "resources/*.txt", "resources/*.png", "resources/*.json", "resources/*.json.gz", "resources/*.txt.gz", "resources/fonts/*.ttf", "resources/fonts/*.txt"]
+
