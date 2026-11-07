@@ -120,14 +120,21 @@ class VisualForms(unittest.TestCase):
     def setUpClass(cls):
         import tkinter as tk
         try:
-            probe = tk.Tk()
-            probe.destroy()
+            # Reuse a Tcl interpreter across visual tests. Repeatedly creating
+            # and destroying Tk() itself can destabilize the macOS native Tk
+            # event loop; individual tests still get isolated Toplevel windows.
+            cls._tk_host = tk.Tk()
         except tk.TclError:
             raise unittest.SkipTest('Desktop display is unavailable')
+        cls._tk_host.withdraw()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._tk_host.destroy()
 
     def setUp(self):
         import tkinter as tk
-        self.root = tk.Tk()
+        self.root = tk.Toplevel(self._tk_host)
         self.root.geometry('950x740')
         self.addCleanup(self.root.destroy)
 
@@ -256,9 +263,14 @@ class VisualForms(unittest.TestCase):
         form = FormEditor(self.root, 'Settings', {'start': 0., 'end': 2.}, lambda d: None)
         for _ in range(3):
             form.reset()
+            self.assertEqual(len(form.win._openmukti_scroll_targets), 1)
         self.root.update()
         form.win.event_generate('<MouseWheel>', delta=-120)
         self.root.update()
+        # Closing the form must dispose the scroll area without retaining a
+        # reference to a canvas which Tk has already destroyed.
+        form.win.destroy()
+        self.assertEqual(form.win._openmukti_scroll_targets, [])
 
 
 class NarrationIntegration(unittest.TestCase):

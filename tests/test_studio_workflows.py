@@ -84,7 +84,11 @@ class Caching(Workspace):
         settings=SpeechSettings(model=str(file))
         d=Demo()
         before=model_identity(d,settings)
+        before_stat = file.stat()
         file.write_bytes(b'other')
+        # Recreate the Windows timestamp collision: two versions of the same
+        # size can have identical filesystem metadata immediately after writes.
+        os.utime(file, ns=(before_stat.st_atime_ns, before_stat.st_mtime_ns))
         self.assertNotEqual(before,model_identity(d,settings))
     def test_stream_yields_real_independent_wav_files(self):
         from openvoice.local_speech import speech_chunks

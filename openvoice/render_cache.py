@@ -9,26 +9,26 @@ import sqlite3
 import shutil
 from contextlib import closing, contextmanager
 from dataclasses import asdict
-from functools import lru_cache
 from importlib import metadata
 from pathlib import Path
 
 from . import __version__
 
 
-@lru_cache(maxsize=256)
-def _digest_file(path, size, modified, changed):
+def file_identity(path):
+    """Hash the actual model contents, even when filesystem timestamps repeat.
+
+    Windows can preserve creation times and report the same modification time for
+    two immediate writes of the same size.  Caching a checksum by stat metadata
+    can reuse rendered audio produced by *different* weights.  ChunkStore already
+    memoizes model_identity per engine/settings for a rendering session, so this
+    streaming hash happens once per session rather than once per audio chunk.
+    """
     digest = hashlib.sha256()
-    with open(path, 'rb') as source:
+    with Path(path).resolve().open('rb') as source:
         for block in iter(lambda: source.read(1 << 20), b''):
             digest.update(block)
     return digest.hexdigest()
-
-
-def file_identity(path):
-    path = Path(path).resolve()
-    stat = path.stat()
-    return _digest_file(str(path), stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
 
 
 def model_identity(engine, settings):

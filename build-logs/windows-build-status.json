@@ -1,0 +1,8 @@
+{
+  "timestamp_utc": "2026-11-07T07:38:18.005829+00:00",
+  "phase": "Installing the native Windows Unicode text shaping library",
+  "last_command": null,
+  "exit_code": null,
+  "detail": null,
+  "next_step": "If interrupted, read build-logs/windows-build.log and run py -3 build.py --repair"
+}

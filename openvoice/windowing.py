@@ -142,40 +142,59 @@ def scrollable_area(parent, *, padding: int = 12, background: str = '#111827', p
     panel.bind('<Configure>', content_changed)
     canvas.bind('<Configure>', viewport_changed)
 
-    def wheel(event):
-        widget = event.widget
-        if widget.winfo_toplevel() != parent.winfo_toplevel():
-            return
-        if not canvas.winfo_exists() or not canvas.winfo_viewable():
-            return
-        # Only the scroll area containing the event receives the wheel. This is
-        # essential for tabbed forms and windows with several scroll panels.
-        ancestor=widget
-        while ancestor is not None and ancestor is not shell:
-            ancestor=getattr(ancestor,'master',None)
-        if ancestor is not shell:
-            return
-        if widget.winfo_class() in ('Text', 'Treeview', 'Listbox', 'TCombobox'):
-            return
-        if getattr(event, 'num', None) in (4, 5):
-            delta = -3 if event.num == 4 else 3
-        elif getattr(event, 'delta', 0):
-            delta = -3 if event.delta > 0 else 3
-        else:
-            return
-        canvas.yview_scroll(delta, 'units')
-        return 'break'
-
+    # Bind each top-level window only once.  Previously every nested scroll
+    # panel registered a new top-level Tcl callback, then unbound that callback
+    # synchronously from a child <Destroy> event.  FormEditor.reset() destroys
+    # and recreates those children several times, and changing Tk bindings
+    # while Tk is dispatching destruction can crash native Tcl/Tk on macOS.
+    #
+    # The registry only holds live scroll areas.  Destruction removes a record
+    # without changing a Tcl event binding; the single dispatcher is released
+    # automatically when its owning top-level window is destroyed.
     top = parent.winfo_toplevel()
-    bindings=[]
-    for sequence in ('<MouseWheel>', '<Button-4>', '<Button-5>'):
-        bindings.append((sequence,top.bind(sequence, wheel, add='+')))
+    targets = getattr(top, '_openmukti_scroll_targets', None)
+    if targets is None:
+        targets = []
+        top._openmukti_scroll_targets = targets
+
+        def wheel(event):
+            try:
+                widget = event.widget
+                if widget.winfo_toplevel() is not top:
+                    return
+                if widget.winfo_class() in ('Text', 'Treeview', 'Listbox', 'TCombobox'):
+                    return
+                if getattr(event, 'num', None) in (4, 5):
+                    delta = -3 if event.num == 4 else 3
+                elif getattr(event, 'delta', 0):
+                    delta = -3 if event.delta > 0 else 3
+                else:
+                    return
+                # Check innermost panels first, for nested scrollable editors.
+                for candidate, target_canvas in reversed(tuple(targets)):
+                    ancestor = widget
+                    while ancestor is not None and ancestor is not candidate:
+                        ancestor = getattr(ancestor, 'master', None)
+                    if ancestor is not candidate:
+                        continue
+                    if not target_canvas.winfo_exists() or not target_canvas.winfo_viewable():
+                        return
+                    target_canvas.yview_scroll(delta, 'units')
+                    return 'break'
+            except tk.TclError:
+                # Tk may dispatch a final event while a window is being closed.
+                return
+
+        for sequence in ('<MouseWheel>', '<Button-4>', '<Button-5>'):
+            top.bind(sequence, wheel, add='+')
+
+    targets.append((shell, canvas))
+
     def cleanup(event):
         if event.widget is shell:
-            for sequence,binding in bindings:
-                try:top.unbind(sequence,binding)
-                except tk.TclError:pass
-    shell.bind('<Destroy>',cleanup,add='+')
+            targets[:] = [record for record in targets if record[0] is not shell]
+
+    shell.bind('<Destroy>', cleanup, add='+')
     return shell, panel, canvas
 
 
