@@ -22,6 +22,25 @@ def query(*command, privileged=False):
     return subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
 
 
+
+def installed_ips_fmris(lines: str, names: list[str]) -> list[str]:
+    """Select actual installed-package FMRIs instead of fabricating dependencies."""
+    chosen = set(names)
+    result = []
+    for line in lines.splitlines():
+        fields = line.strip().split()
+        if not fields or not fields[0].startswith(('pkg://', 'pkg:/')):
+            continue
+        fmri = fields[0]
+        name = fmri.split('@', 1)[0].removeprefix('pkg:/')
+        if name.startswith('/'):
+            name = name[1:]
+            name = name.split('/', 1)[1] if '/' in name else ''
+        if name in chosen and fmri not in result:
+            result.append(fmri)
+    return result
+
+
 def main(*, install_only=False):
     family = system()
     attempts = []
@@ -82,9 +101,14 @@ def main(*, install_only=False):
             installed = query('pkg', 'install', '--accept', package, privileged=True)
             attempts.append({'package': package, 'installed': installed.returncode in (0, 4),
                              'detail': (installed.stderr + installed.stdout)[-1500:]})
-            receipt = query('pkg', 'list', '-Hv', package)
-            if receipt.returncode == 0:
-                ips_deps += [line.split()[0] for line in receipt.stdout.splitlines() if line.startswith('pkg:')]
+        # Installed FMRIs, including publisher names, are authoritative. The
+        # previous per-package pattern was empty on OmniOS and broke IPS.
+        receipt = query('pkg', 'list', '-Hv')
+        if receipt.returncode != 0:
+            attempts.append({'package': 'installed IPS inventory', 'installed': False,
+                             'detail': (receipt.stderr + receipt.stdout)[-1500:]})
+        ips_deps = installed_ips_fmris(receipt.stdout if receipt.returncode == 0 else '', packages)
+        print('Installed IPS dependency FMRIs:', json.dumps(ips_deps), flush=True)
         os.environ['OPENMUKTI_IPS_DEPENDENCIES'] = json.dumps(ips_deps)
     else:
         raise RuntimeError('This CI preparer is for the BSD and Solaris/illumos jobs')

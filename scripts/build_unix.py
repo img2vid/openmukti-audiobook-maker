@@ -168,6 +168,11 @@ def freeze():
         raise RuntimeError('The frozen executable architecture differs from the native host')
     if family == 'macos' and macho_arch(binary) != arch:
         raise RuntimeError('The macOS executable architecture differs from the native host')
+    if family == 'macos':
+        # PyInstaller can bind the Tesseract CLI to cv2's incompatible dylib.
+        # Restore the Homebrew dependency closure in an isolated private tree.
+        from .macos_tesseract import isolate_tesseract
+        isolate_tesseract(payload, tesseract)
     # This launcher works from any extraction directory, including paths containing spaces.
     write(payload / 'openmukti', '#!/bin/sh\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit\nexec "$HERE/' + APP_NAME + '" "$@"\n', 0o755)
     write(payload / 'openmukti-gui', '#!/bin/sh\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit\nexec "$HERE/' + APP_NAME + '" gui "$@"\n', 0o755)
@@ -642,7 +647,9 @@ def bsd_package(payload, profile):
             manifest['deps'] = deps
         write(metadata / '+MANIFEST', json.dumps(manifest, indent=2))
         out = WORK / 'pkg-output'; out.mkdir(exist_ok=True)
-        run('pkg', 'create', '-r', stage, '-m', metadata, '-o', out)
+        # DragonFly's libarchive lacks builtin zstd support: use its native XZ format.
+        compression = ['-f', 'txz'] if family == 'dragonfly' else []
+        run('pkg', 'create', *compression, '-r', stage, '-m', metadata, '-o', out)
         files = list(out.glob('openmukti-*'))
         if len(files) != 1: raise RuntimeError('Native pkg did not create one archive')
         target = DIST / (stem(profile) + files[0].suffix)

@@ -340,3 +340,129 @@ jobs:
           name: Openmukti-${{ matrix.target.id }}
           path: dist/
           if-no-files-found: error
+
+  release-create:
+    # A failure in one architecture does not hide the verified outputs of others.
+    needs: [checks, windows, linux, additional-linux-architectures, macos, freebsd, openbsd, netbsd, dragonfly, solaris, illumos, additional-native-runners]
+    if: ${{ always() && github.event_name == 'push' && needs.checks.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Create draft version or CI release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('ci-{0}', github.run_id) }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+              echo "Versioned release already exists; refusing to overwrite it." >&2
+              exit 1
+            fi
+            echo "Reusing the existing CI release for this run."
+          else
+            gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" \
+              --title "Openmukti build #${{ github.run_number }} (uploading)" \
+              --notes "Uploading build files. Verification is not complete." \
+              --draft --prerelease
+          fi
+
+  release-upload:
+    needs: [release-create]
+    if: ${{ needs.release-create.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      actions: read
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        artifact:
+          - Openmukti-Windows-x64
+          - Openmukti-Windows-arm64
+          - Openmukti-Linux-x86_64
+          - Openmukti-Linux-aarch64
+          - Openmukti-Linux-i686-system-runtime
+          - Openmukti-Linux-armv7-system-runtime
+          - Openmukti-Linux-ppc64le-system-runtime
+          - Openmukti-Linux-s390x-system-runtime
+          - Openmukti-Linux-riscv64-system-runtime
+          - Openmukti-macOS-x86_64
+          - Openmukti-macOS-aarch64
+          - Openmukti-FreeBSD-x86_64-system-runtime
+          - Openmukti-FreeBSD-aarch64-system-runtime
+          - Openmukti-OpenBSD-x86_64-system-runtime
+          - Openmukti-OpenBSD-aarch64-system-runtime
+          - Openmukti-NetBSD-x86_64-system-runtime
+          - Openmukti-NetBSD-aarch64-system-runtime
+          - Openmukti-DragonFly-x86_64-system-runtime
+          - Openmukti-Solaris-x86_64-system-runtime
+          - Openmukti-illumos-x86_64-system-runtime
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download successful platform artifact, if present
+        id: fetch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[].name' | grep -Fqx -- "$ARTIFACT"; then
+            gh run download "$GITHUB_RUN_ID" --name "$ARTIFACT" --dir received
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo "No verified artifact for $ARTIFACT; it will be marked missing."
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Stage verified packages and attach them to GitHub Release
+        if: steps.fetch.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('ci-{0}', github.run_id) }}
+          ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          python -m scripts.prepare_ci_release_assets received release-assets "$ARTIFACT"
+          test -n "$(find release-assets -type f -print -quit)"
+          find release-assets -type f -print0 | xargs -0 gh release upload "$RELEASE_TAG" --clobber
+
+  release-finalize:
+    needs: [checks, windows, linux, additional-linux-architectures, macos, freebsd, openbsd, netbsd, dragonfly, solaris, illumos, additional-native-runners, release-create, release-upload]
+    if: ${{ always() && needs.release-create.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish checksummed builds with accurate platform status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('ci-{0}', github.run_id) }}
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          printf '%s' "$NEEDS_JSON" > needs.json
+          release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq '.id')
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100" \
+            --paginate --jq '.[].name' | python -c \
+            'import json,sys; print(json.dumps([{"name": line.strip()} for line in sys.stdin if line.strip()]))' > assets.json
+          python -m scripts.finalize_ci_release needs.json assets.json release-notes.md \
+            --ref "$GITHUB_REF" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          title=$(python -c 'import json; print(json.load(open("release-notes.json"))["title"])')
+          count=$(python -c 'import json; print(len(json.load(open("release-notes.json"))["uploaded"]))')
+          if [ "$count" -eq 0 ]; then
+            echo 'No valid platform artifacts uploaded; retaining an unpublished draft.' >&2
+            exit 1
+          fi
+          prerelease=$(python -c 'import json; print(str(json.load(open("release-notes.json"))["prerelease"]).lower())')
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+            -F draft=false -F prerelease="$prerelease" -f name="$title" \
+            -f body="$(cat release-notes.md)"
+          echo "GitHub Release published: $RELEASE_TAG ($count platform groups)."
+
