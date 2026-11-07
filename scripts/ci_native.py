@@ -41,6 +41,18 @@ def installed_ips_fmris(lines: str, names: list[str]) -> list[str]:
     return result
 
 
+def ips_packages_for_python(major: int, minor: int) -> list[str]:
+    """Request packages matching the interpreter actually running in the VM.
+
+    OmniOS r151054 uses Python 3.13, so fixed python-311 package names
+    could never match that host's installed IPS inventory.
+    """
+    version = f'{major}{minor}'
+    return [f'runtime/python-{version}', f'library/python/tkinter-{version}',
+            'image/tesseract', 'image/library/opencv', 'image/library/pillow',
+            'library/python/numpy', 'video/ffmpeg', 'print/filter/poppler']
+
+
 def main(*, install_only=False):
     family = system()
     attempts = []
@@ -94,9 +106,7 @@ def main(*, install_only=False):
         os.environ['OPENMUKTI_BSD_DEPENDENCIES'] = json.dumps(bsd_deps)
     elif family in ('solaris', 'illumos'):
         # Search the configured IPS publishers rather than assuming third-party repositories.
-        packages = ['runtime/python-311', 'library/python/tkinter-311', 'image/tesseract',
-                    'image/library/opencv', 'image/library/pillow', 'library/python/numpy',
-                    'video/ffmpeg', 'print/filter/poppler']
+        packages = ips_packages_for_python(sys.version_info.major, sys.version_info.minor)
         for package in packages:
             installed = query('pkg', 'install', '--accept', package, privileged=True)
             attempts.append({'package': package, 'installed': installed.returncode in (0, 4),
@@ -108,6 +118,21 @@ def main(*, install_only=False):
             attempts.append({'package': 'installed IPS inventory', 'installed': False,
                              'detail': (receipt.stderr + receipt.stdout)[-1500:]})
         ips_deps = installed_ips_fmris(receipt.stdout if receipt.returncode == 0 else '', packages)
+        if not ips_deps:
+            # Do not generate made-up package dependencies or silently mark
+            # an incomplete native IPS package as successful. Log enough
+            # inventory context to diagnose the next VM image change.
+            print('IPS dependency discovery failed:', json.dumps({
+                'python': sys.version.split()[0],
+                'requested': packages,
+                'inventory_exit_code': receipt.returncode,
+                'inventory_stderr': receipt.stderr[-1500:],
+                'python_inventory': [
+                    line for line in receipt.stdout.splitlines()
+                    if 'python' in line.lower()
+                ][:25],
+                'inventory_sample': receipt.stdout.splitlines()[:8],
+            }), flush=True)
         print('Installed IPS dependency FMRIs:', json.dumps(ips_deps), flush=True)
         os.environ['OPENMUKTI_IPS_DEPENDENCIES'] = json.dumps(ips_deps)
     else:
