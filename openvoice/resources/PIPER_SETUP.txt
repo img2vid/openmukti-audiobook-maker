@@ -1,0 +1,30 @@
+# Add Piper Neural Voices — Simple Instructions
+
+1. Portable Windows EXEs already include the Piper runtime. Source installations need a compatible Piper executable or Python Piper package.
+2. Launch Openmukti Audiobook Maker Version 1.
+3. Choose a Piper voice directly in the main **Voice** dropdown; the official catalog is listed whether or not the model is installed. The first selection downloads its checked ONNX and JSON files automatically.
+   Or use **Voices → Download Piper voices by language** for manual batch downloads.
+4. Pick a language, such as English, Bengali, or Hindi, then select a model. Press **Download Selected**.
+5. The application automatically downloads the `.onnx` file and its matching `.onnx.json` file, checks the published checksums, and places both in your local voice library.
+6. The catalog also appears in **Character Voices**. Pick a voice to download its model automatically; Speak, Preview and Export will also fetch a missing selected Piper voice. No confirmation or success dialogs interrupt the download.
+
+Manual installation: download matching model/config files from https://huggingface.co/rhasspy/piper-voices/tree/main and choose **Add local Piper model + configuration**.
+
+Voice models are not bundled into the source download. The application fetches catalog metadata when online and caches it. Offline, the cached catalog and installed voices remain visible, but a voice must already be installed to synthesize without an internet connection. The downloader requires a network connection. If you choose to download all models, check the displayed size first; the entire catalog can consume many gigabytes. Individual voices may have licensing conditions; review their model cards before distribution.
+
+## Multiple speakers in one Piper ONNX model
+
+Some models contain several distinct voices. After choosing a Piper model in the main
+window, use **Piper speaker** to choose any available speaker. The dropdown reads
+`num_speakers` and `speaker_id_map` from the model's `.onnx.json` file and
+shows names when supplied; speaker IDs start at 0. Selecting Speaker 0 is the
+default. Every installed model and manually selected ONNX model is supported.
+
+In **Character Voices**, select a model for each character, then select its
+**Piper speaker** separately. The speaker is saved in character presets and in
+portable projects, and is used for voice previews, audio exports and videos.
+
+CLI: `python -m openvoice render --engine piper --model /path/voice.onnx --speaker-id 2 -t "Hello" -w out.wav`
+The requested speaker must exist in the model; invalid IDs return an error.
+
+List all speaker IDs using `python -m openvoice voices --speakers --model /path/voice.onnx` (add `--json` for scripts).

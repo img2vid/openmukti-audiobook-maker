@@ -1,0 +1,253 @@
+OPENMUKTI AUDIOBOOK MAKER 1.2.0
+Desktop user guide
+
+START CREATING
+
+Open Openmukti.pyw, or the packaged application produced for your computer.
+The source application needs Python, Tk, Pillow and any optional components
+required by the tools you use. Packaged builds can include these components.
+
+The Start creating window contains 47 tools. Type a word such as voices,
+captions, sound, sample or project. Choose a category to narrow the list.
+Press Enter in the search field to open the first match. Press Escape to
+return to your manuscript. Reopen the hub from Start creating or Ctrl+K.
+Ctrl+Shift+P also opens the hub. Custom shortcuts can be changed in Preferences.
+
+The hub has a production checklist and a Recent files button. Recent entries
+remember projects and documents opened or saved through the main workspace.
+A missing file stays in the list with an unavailable label; use Open to find
+its new location. The list does not move or copy your files.
+
+CREATING A PROJECT
+
+Choose New audiobook project. Enter a title and optional author credit.
+Browse for a manuscript if you already have one. You can also choose a saved
+project template to reuse cast and production settings. Choose a project
+filename ending in .oamproj, then Create project.
+
+Open the project after creating it is optional. If you have changed the main
+manuscript, the app lets you save it before replacing it. Cancelling a save
+keeps the existing manuscript open. The same protection applies when opening
+a document or closing the main application. These prompts protect manuscript
+text; save the complete project to preserve cast, media and other settings.
+
+The main editor starts empty, so help text is never included in narration.
+Open imports a document. Save saves plain text. File > Export entire project
+saves the complete workspace, including supported media and voice settings.
+
+Project workspace opens the existing tabbed editor. Use its chapter navigator
+to jump between chapters and change their order. Protect selection prevents
+accidental edits to a passage. Project rules lets you manage vocabulary,
+protected words, preferred wording, editorial checks and speaker rules.
+
+WORKING WITH FORMS
+
+Settings use labelled controls. Choose an item from a dropdown, tick a
+checkbox, enter a number, or use Browse to choose a local file or folder.
+Color fields have a Choose color button. Number fields show the units in
+their labels. Invalid values are explained in the window and keep it open.
+
+Apply changes commits a form. Cancel discards that form's uncommitted edits.
+Reset changes restores the values present when the form was opened.
+Ctrl+Enter applies a form. Escape closes it without applying.
+
+Nested settings have an Edit button. List editors offer Add, Edit, Duplicate,
+Remove, Move up and Move down. Double-click an entry or press Enter to edit
+it. Search filters the list while retaining each entry's original identity.
+Moving an item changes its order in the complete list. Named dictionaries
+use unique names or phrases instead of a numerical order.
+
+An inner Apply changes updates the draft in its parent form. Apply the
+parent form as well to commit the complete change. Cancelling the parent
+discards those nested draft edits.
+
+VOICES AND PRONUNCIATIONS
+
+Choose a speech engine and voice in the main window. The Voices menu contains
+Piper and other neural voice managers. Voice downloads remain explicit.
+Installed voices only filters available local voices. Some voices have more
+than one speaker; choose a speaker using the existing speaker control.
+
+Character voices opens the full casting workspace. Find characters, review
+their identities, assign voices, and audition a short sample before export.
+
+Word substitutions opens a dictionary table. Add a written word or phrase
+and the words the narrator should say instead. Match capitalization is
+optional. Import an existing dictionary if you have one. Try on current
+manuscript shows the original and spoken wording side by side without
+changing the manuscript. Apply changes saves the dictionary and enables it
+for narration. Clear dictionary from narration disables that dictionary.
+
+IPA pronunciations opens the existing pronunciation table for precise
+phonetic rules and language-specific spoken fallbacks. The ordinary word
+substitution editor is sufficient for many names and abbreviations.
+
+Compare voices uses the current cast. Edit the common sample passage,
+review profiles, choose an output folder, and create a listening comparison.
+The result opens as a local page with audio players. Neural voices must be
+installed or explicitly approved through the normal voice download controls.
+The selected main narrator voice, speaker, rate, pitch and volume are retained.
+
+NARRATION PLANNER
+
+The planner copies ordinary text from the main editor into speech passages.
+Known character labels are converted into voice assignments. The main
+manuscript stays unchanged while you work on the plan.
+
+Choose a scene from the dropdown. Add scenes, rename them, or remove a scene.
+Within a scene, add speech, a pause, or an approved sound. A speech passage
+has a character voice, emotion, speed multiplier, pitch change and volume
+change. A speed multiplier of 1 is normal; 0.8 is slower and 1.2 is faster.
+Pauses are measured in seconds. Use Move up or Move down to rearrange entries.
+
+Character voices edits the plan's voice profiles. Keep the Narrator profile.
+Approved sounds assigns names to existing local recordings. Add a recording
+there before choosing it as a sound passage. Removing a voice or sound that
+is still used by a passage is rejected so the plan stays usable.
+
+Check plan shows a readable summary of the speech, pauses, sounds and words.
+Save plan creates an .oamscore file. Open plan also accepts older supported
+scores and speech-markup files. Speech markup is converted to visual passage
+records when opened. Keep the original file if you need its exact formatting.
+
+Render audio chooses an output filename and starts rendering in the
+background. Stop rendering cancels the render. Wait for it to stop before
+closing that planner. The renderer uses a copy of the plan taken at startup.
+
+The planner supports sequential performances. Manuscripts using the older
+overlapping or explicitly timed audio cues continue through normal Export
+audio. For such a manuscript, the separate planner opens empty with an
+explanation, leaving the original text and its timing untouched. You can
+still open an existing plan or add passages in that separate planner.
+
+ARTWORK AND COMIC PANELS
+
+Cover designer retains its canvas, layers, drag controls and history.
+Edit a layer to change its coordinates, timing, crop, opacity, color and
+camera easing using forms. Coordinates run from 0 to 1 across the image.
+For example, left 0.1 and right 0.9 cover the central 80 percent of its width.
+Image layers can find a focal point automatically or use a chosen point.
+Keep inside safe area and Avoid other text layers assist placement.
+
+Comic panel tour opens a page image. Drag a rectangle over each panel in
+the desired reading order. Each rectangle receives an order number. Choose
+a panel in the list to move it up or down, or remove it. Choose the duration
+for each panel, then Add panel tour. The result becomes timed image layers
+in the cover designer and can be used in video.
+
+The existing Stroke Studio remains available in audiobook video settings.
+Draw actual pen trajectories there and save a handwriting collection; you
+do not have to write the underlying data file yourself.
+
+SOUND AND AUDIO
+
+Sound timeline mixes narration, music, effects and ambience. Add local clips
+and choose their role from a dropdown. Double-click a clip to change its
+start, source offset, duration, volume, stereo position, fades, acoustic
+space, loop settings, mute state and attribution.
+
+A volume multiplier of 1 keeps the original level. Stereo position runs from
+-1 at the left, through 0 at the center, to 1 at the right. A looping clip
+needs a duration. Fade lengths cannot exceed the clip's duration.
+
+Automation points are a table of time and volume pairs. Times must increase
+and remain inside the clip duration. Mix preferences includes automatic
+music ducking and an editable marker list. Add marker uses a time-and-label
+form. Existing preview, mix export, stem export and waveform editing remain.
+
+Audio processor lists operations in a dropdown. Add audio files with the
+buttons. For Join recordings, add at least two files and arrange them in
+playback order. Other operations use one file. Continue opens the controls
+needed for the selected operation, then asks where to save the result.
+
+Available operations include format conversion, joining, trimming, speed,
+gain, normalization, reverse, fades, mono/stereo conversion, resampling,
+noise reduction, compression, de-essing, equalization, panning and silence
+removal. The output must be different from the source.
+
+Additional production tools include an audio quality report, recording
+comparison, crossfade, promotional sample, waveform image and spectrogram.
+Media processing requires the appropriate local media tools and codecs.
+
+CAPTIONS AND VIDEO
+
+Subtitle editor uses start, end and text forms. Start is in seconds and end
+must be later than start. Import existing timing files, edit cues, and save
+SubRip or WebVTT captions for use with video.
+
+Caption design previews contrast and the safe area. Choose white on black,
+yellow on black, black on white, or the existing custom mode. Changing the
+safe margin updates the preview. Apply changes saves those video preferences.
+The preview illustrates the preset and safe area; final layout depends on
+the video aspect ratio, text and other video settings.
+
+Make audiobook video retains the existing artwork list, narration options,
+handwriting and animation modes, aspect ratios and previews. Choose timing
+or handwriting data through the file pickers or create it with the editors.
+
+PRODUCTION QUEUE
+
+Add render opens a form. Choose either a document with one voice or a saved
+complete project. Select the source file and audio output.
+
+Document voice contains the current engine, voice, model, speaker, language,
+rate, pitch, volume and pronunciation dictionaries. You can change these for
+the queued document. A saved project instead uses its own complete cast and
+settings, so save your project before adding it to the queue.
+
+Higher priority numbers run first. Start after accepts a local date and time,
+such as 2026-11-05 18:30. Leave it blank to make the task ready immediately.
+The queue is local to this application. Ready jobs run when a queue worker is
+active; scheduling does not keep a closed application running. Use Run ready
+jobs to start the worker. Refresh updates the list. Cancel and Retry apply to
+the selected job in a state that permits that action.
+
+PREFERENCES AND ACCESSIBILITY
+
+Appearance contains interface language, typeface, text size, interface size,
+high contrast, touch controls, left-side settings and reduced motion.
+Quick access contains toolbar items and keyboard shortcuts. Record a key
+combination in the shortcut editor and choose an action from its dropdown.
+Production contains performance, default audio format, reusable audio folder
+and import preferences. Access controls network, microphone, external tools,
+extensions and allowed working folders. Leaving the allowed-folder list
+empty allows all folders. Translation contains the optional existing local
+translation features. Set up those translation components before using them.
+
+The interface chooses the platform's default font when no custom typeface is
+saved. Forms scroll on smaller screens, with Apply and Cancel kept outside
+the scrolling content. The task hub stacks descriptions on narrow windows.
+
+Accessible workspace starts the existing private local browser workspace.
+It does not publish your manuscript. Stop that workspace when finished.
+
+READABLE REPORTS
+
+Reports display sections and results in a tree. Expand or collapse sections,
+filter by a word, and select an entry to read its full detail below. Copy
+report puts readable text on the clipboard. Save report offers ordinary text
+or a CSV table. Diagnostic data stays structured internally without asking
+you to read or edit that representation.
+
+BUILDING APPLICATION PACKAGES
+
+Open Build-Application.pyw in the source folder. Choose formats supported by
+the current computer. Automatic selects the existing recommended package
+profile for that host. You can instead choose a package with included Python
+and dependencies, or a package that uses installed Python.
+
+Check requirements previews the existing dependency plan. Build selected
+packages runs the existing builders. The details area shows build output;
+Save log saves it. Open outputs opens the dist folder. Stop stops the build
+process and its subprocess group. Wait for the build to stop before closing.
+
+The builder creates native packages for the host computer; it does not
+cross-compile every operating system. Some formats require external package
+tools, signing configuration or additional architecture-specific components.
+Existing automated build scripts and repair modes remain available.
+
+LICENSE AND CREDIT
+
+Created by Aishik Dutta. The application is MIT licensed. Voice engines,
+voice models, fonts and other dependencies retain their own licenses. Read
+THIRD_PARTY_NOTICES.md and the license supplied with each downloaded voice.

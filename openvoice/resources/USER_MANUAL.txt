@@ -1,0 +1,548 @@
+# Openmukti Audiobook Maker Version 1
+
+## Complete user manual
+
+*Created by Aishik Dutta, open-source developer.*
+
+This guide is written for people who have never used an audiobook creator. All steps apply to Version 1, the edition without Gutenberg Mode.
+
+## 1. What does the software do?
+
+Openmukti turns written text into narration, creates audio-only audiobooks or illustrated audiobook videos, and combines multiple chapters into a complete book. It supports separate voices for the narrator and characters, can import existing chapter audio, and can process entire folders of ebooks. It can work offline after the necessary speech engines and Piper models have been installed. Internet is used to download additional voices.
+
+## 2. First installation
+
+**Windows:** Install Python 3.10 or newer from its official website and check **Add Python to PATH** during setup. Extract the ZIP and open Command Prompt in the extracted folder. Enter `py -m pip install .`, then `py -m openvoice.cli gui`. To create portable EXEs on your own Windows PC without GitHub, run `py -3 build.py` in the source folder. The script requires internet the first time for its build tools and FFmpeg downloads. The GUI executable it creates is `OpenmuktiAudiobookMaker.exe` and the command-line program is `OpenmuktiAudiobookMakerCMD.exe`. Python is only needed for *building*, not for running the finished EXE on a compatible Windows PC.
+
+**Linux:** Use `python3 -m pip install .` in a Python virtual environment, then `python3 -m openvoice.cli gui`. Install Tkinter, FFmpeg and a speech engine using your system package manager. Native GUI support also requires an active desktop environment.
+
+**macOS and BSD:** Use Python 3.10+, Tkinter, FFmpeg, and a supported engine. Platform compatibility depends on available speech engines and operating-system packages. Source use requires a compatible Python/Tk installation and speech engine.
+
+## 3. The main window
+
+The main text editor accepts pasted text or an imported document. Voice settings are on the right; playback, audio export, and video export are below. The **Character Voices** button opens the multi-speaker workspace. **Combine Chapters** imports many chapters/books. The **Voices** menu lets you add or download neural voice models. **Help** contains this manual, Piper setup instructions, file-naming examples, and About Us.
+
+## 4. How to install the Piper speech engine
+
+Portable Windows EXEs include the Piper runtime; download or select a voice model in the app. When running from Python source, install a compatible Piper executable or Python Piper runtime. Confirm that `piper --help` works in a terminal, or place the `piper` (`piper.exe` on Windows) executable in the appropriate application vendor folder. If your system needs additional Piper runtime libraries, include those with the executable.
+
+Piper is optional. Without it, the app uses Windows SAPI, macOS system voices, or eSpeak if available. A user-selected Piper voice does not silently fall back to a different voice.
+
+## 5. How to download Piper voices — easiest method
+
+1. Choose a Piper model from the main Voice dropdown or Character Voices; the application downloads it automatically when first selected. Alternatively, open **Voices → Download Piper voices by language** for manual downloads.
+2. Let the official voice catalog load. On first use, this requires internet access.
+3. Use the **Language** selector to choose English, Bengali, Hindi, French, etc. The list comes from the actual catalog and will change when the publisher adds models.
+4. Search for a voice name or model ID. Each row shows the model name, language, quality, speaker count, and size.
+5. Ctrl-click to select multiple voices; click **Download Selected**. There are also **Download All Shown** and **Download Entire Catalog** options. The latter can use enormous disk space: read the size estimate before confirming.
+6. The app downloads each `.onnx` and its matching `.onnx.json`, verifies metadata checksums and byte sizes, and installs them into its voice library. Failed downloads are not installed.
+7. Return to the main window and click **Refresh installed voices**. Select **Piper** as the engine, or leave **Auto** enabled to prioritize Piper when a model and runtime are available.
+
+You can alternatively download model pairs manually from the [Piper voice catalog](https://huggingface.co/rhasspy/piper-voices/tree/main) and choose **Add local Piper model + configuration**. The two filenames must match exactly: `en_US-amy-medium.onnx` and `en_US-amy-medium.onnx.json`.
+
+Individual voices may have specific licenses, attribution requirements, or usage restrictions. Check their model cards before distributing voice files or audio made from them.
+
+## 6. Narrator and character voices
+
+1. Open **Character Voices**.
+2. Type story text into the script editor, or open a document in the main editor first.
+3. Click **Find Characters** to find names (including invented names), quotation dialogue, screenplay labels and some dash-led dialogue. The program automatically inserts editable `[Character Name]` and `[Narrator]` labels, creates corresponding profiles, and tries to assign available installed voices. If the main editor text matches the studio input, it is updated too. Review all detected speakers and uncertain quotations: narration and ambiguous speech are intentionally kept with Narrator.
+4. Select each new character, review the suggested model, language, gender presentation, age, personality, volume, speed, pitch and transformation strength, and save the profile. Names alone do not establish age or gender: explicit story clues are used where available.
+5. All character settings remain editable after auto-detection. Gender presentation, age, style, speed, pitch, volume and transformation strength affect the configured audio-processing pipeline; actual voice characteristics depend on the selected model. Existing custom profiles are retained when scanning again.
+6. Mark speakers in the story with explicit tags. Example:
+
+```text
+[Narrator] The school bell rang.
+[Anika] Hurry up! [Rohan] I'm coming.
+[Narrator] They raced to the classroom.
+```
+
+7. Click **Export Audio** and choose `.wav`, `.mp3`, `.m4a`, `.flac`, or `.ogg`, or click **Export Video**, choose `.mp4` etc., and select a cover image or series of images.
+8. Save the project as JSON so you can reuse profiles in later chapters and books.
+
+Speaker tags can occur anywhere in a line and can surround one sentence, an entire paragraph, or only a passage. The software synthesizes each segment using the assigned voice, normalizes sample rates using FFmpeg, and joins the pieces into one continuous audio track. When creating video, this track is used as the video's narration.
+
+## 7. Automatic language detection and voice recommendations
+
+Use **Detect Language + Recommend** in the Character Voice Studio, or `openmukti detect-language -f chapter.txt` in the CLI. Multiple languages, even inside a paragraph, can be reported. Unconfigured per-character languages and installed Piper models are updated; a separate report lists detected language codes, locally installed matches and downloadable Piper models in the voice catalog. The voice downloader can install those separately. No language model is downloaded automatically. Detection uses Unicode script identification, common language words, and optionally `lingua-language-detector` for longer ambiguous passages. Short passages, transliterations, code switches, unknown languages and quotes without an explicit speaker may need manual correction. Piper voice catalogs do not reliably provide demographic attributes, so a language match is not a guarantee of a matching age or gender timbre.
+
+## 8. How to create an audio-only audiobook
+
+For a single story, create a character voice project and click **Export Audio**. For a library of several books, open **Combine Chapters**, add book folders or a JSON manifest, set **Output** to `audio`, and choose MP3 or WAV. Choose **Export** as `book`, `chapters`, or `both`. Enable **Use my Character Voice Studio profiles** if your chapters contain speaker tags. Choose an output directory and click **One-click export all books**.
+
+Audio-only projects do not need any cover images.
+
+## 9. How to create a video audiobook
+
+In **Character Voices**, click **Export Video** after making profiles, and select one or more images. Or open **Combine Chapters**, set **Output** to `video`, and assign images to chapters. Choose landscape 16:9, portrait 9:16, or square 1:1, then select a resolution and output format. The resulting video uses each chapter's cover while its corresponding narration is playing. For multi-chapter books, complete-book export joins chapter videos in order.
+
+## 10. File naming and bulk conversion
+
+Use one folder per book. Name files with matching chapter numbers. Example:
+
+```text
+Audiobook Library/
+  The Island Adventure/
+    Chapter 01.txt
+    Chapter 01.png
+    Chapter 02.txt
+    Chapter 02.jpg
+  Another Story/
+    Chapter 01.txt
+    Chapter 01.png
+```
+
+For more control, create a JSON manifest (use a JSON object with a books array and each book's chapters array) and specify each chapter's text/audio/cover, book title, and optional `voice_project` path. You can import many ebooks at once. The batch exporter records errors and successes in a JSON report and can skip files that already exist.
+
+## 11. Command-line recipes
+
+```bash
+openmukti voice-catalog --language Bengali
+openmukti voice-download bn_BD-google-medium --yes
+openmukti detect-language -f story.txt
+openmukti character-profiles -f story.txt -w my-voices.json
+openmukti multivoice --project my-voices.json -f story.txt -w story.mp3
+openmukti multivoice --project my-voices.json -f story.txt --images cover.png -w story.mp4 --aspect 16:9
+openmukti audiobooks --folder "Audiobook Library" --output-dir Export --output-type audio --audio-format mp3 --voices-project my-voices.json --mode both
+openmukti audiobooks --folder "Audiobook Library" --output-dir Export --output-type video --voices-project my-voices.json --mode both
+```
+
+For all catalog models, use `openmukti voice-download --all --yes`. This can consume very large amounts of data and storage; prefer a single language or selected voices.
+
+## 12. Troubleshooting
+
+**No Piper voices:** Install the Piper runtime; download both the ONNX model and its matching configuration; refresh voices. **Wrong narrator/character voice:** Check explicit speaker tags and profile names; automatic character detection is not guaranteed to be correct. **No voice for a given language:** Confirm the official catalog offers a compatible model. **MP3/video export fails:** Make sure FFmpeg/FFprobe are available or use a release build with embedded tools. **Downloaded model failed verification:** Retry with a stable connection; the publisher may have updated its catalog during the download. **No covers:** Video books require images, audio-only books do not. **Book text appears as a single chapter:** Check chapter heading formats or use an explicit manifest. **Windows build fails:** Read `README.md`; use a matching Windows/Python architecture and internet during setup. **Slow conversion:** Neural synthesis is CPU-intensive; reduce concurrent exports or use a lighter voice.
+
+## 13. Privacy and licensing
+
+The software synthesizes locally. When downloading voices, it contacts the Piper voice repository, and models are stored locally. It does not send your story text to Piper's catalog. Openmukti source code is MIT-licensed. Piper runtimes, FFmpeg binaries, and individual voices have their own licenses; review them when redistributing a bundled application. User-provided stories and images must be used with appropriate rights.
+
+## 14. About the developer
+
+**Aishik Dutta** — open-source developer and creator of Openmukti Audiobook Maker. The project aims to make audiobook creation and multilingual narration accessible through local processing, a friendly desktop interface, and reusable open formats.
+
+
+DISPLAY AND BENGALI PIPER TROUBLESHOOTING
+Version 1.0.2 resizes or repositions all open windows when the display work area changes. On a small screen, the main window hides extra toolbar buttons but keeps File/Tools/Voices menus, speech and export buttons available. Scroll dialogs to reach their bottom controls.
+The error "ar is not a single codepoint" while using bn_BD-google-medium indicates incompatible phoneme-map keys in the Piper voice configuration, not invalid Bengali text. Version 1.0.2 uses a temporary compatibility copy for older Piper runtimes; the downloaded voice files remain unchanged. If that cannot be applied, try the Python Piper backend or another voice.
+
+Version 1.0.3: a Windows message showing `PlaySync()` and `Unexpected token` means a playback script problem, not a failed Piper synthesis. Install the updated build or rebuild the EXE. Windows audio playback now uses a script with a separate WAV-path parameter.
+
+
+## 6A. Real voice design: age, presentation, and personality
+
+Character age, voice presentation, and personality now affect **generated speech** rather than simply recording a description. Open **Character Voices**, select or add a profile, and choose an **Age**, **Voice presentation**, and **Voice personality**. You can combine personality words separated by commas, for example `warm, calm`, `cheerful, energetic`, or `mysterious, dramatic`. The available keywords are shown in the dropdown. Set **Voice transformation strength** to 0 for the unmodified model voice, or raise it to increase the audible change. Use **Pitch correction** to fine-tune the result. Click **Preview character voice with effects** and listen before producing an entire book. For a non-English model, choose or enter a passage in the model's language.
+
+The voice designer calculates a bounded pitch adjustment, small pacing change, low/high frequency tone adjustments and, for selected styles, dynamics compression. Piper's synthesis speed and an FFmpeg audio filter chain are applied to **each character passage**, so the same controls work with any Piper language model and also in audio-only, per-chapter, whole-book and video audiobook outputs. FFmpeg is required for audible transformations; the application reports an error rather than silently ignoring requested effects when FFmpeg is unavailable. The same profile settings are saved in the voice project JSON and reused during batch exports.
+
+**Important limitations:** These are audio effects, not neural voice conversion or newly trained age/gender-specific models. The base voice model strongly determines naturalness. The presentation settings are artistic pitch/timbre preferences, not verified biological voice attributes. Changing the profile cannot reliably make a voice sound like every age or gender; extreme changes may introduce artifacts. Results differ by model, language, accent and recording quality. There is no separate claim that the official Piper catalog supplies verified age/gender metadata. For the most realistic performance, start with a suitable model and make modest changes.
+
+The processor prefers FFmpeg's Rubber Band pitch-shifting filter when available and falls back to FFmpeg's standard pitch/tempo filters when the bundled FFmpeg build does not include it. The fallback may create more artifacts. Character voice processing is performed entirely on audio and does not translate speech or rewrite language-specific phonemes.
+
+
+CUSTOM IPA PRONUNCIATIONS
+Open Voices > IPA Pronunciation Editor. Add a word, IPA transcription, language code (en, bn, hi, etc., or * for all), and optional spoken fallback. Save and activate a UTF-8 JSON dictionary. Set the IPA dictionary for the main editor or Character Voices to use it in audio and video books. Direct phoneme synthesis needs Python Piper and a voice with compatible phoneme IDs; other engines require the spoken fallback. Use Help > Inline IPA tags and custom pronunciations for examples.
+
+
+INLINE IPA IN STORIES
+
+[Narrator] Please say <həˈloʊ>.
+[Alice] Then say <ipa:bɔ̃ʒuʁ|bonjour>.
+
+Use <ipa:phonemes> for explicit markup, or <ipa:phonemes|regular text> to add a fallback for other engines. These tags work in the main editor, audio-only export, videos, chapters, batch conversion, and character narration. They override dictionaries in the tagged span. The Voices menu has an Insert inline IPA in text command. Piper Python and a compatible ONNX phoneme inventory are required for direct phoneme synthesis. If the model lacks a phoneme and there is no fallback, the app reports an error.
+
+
+COMPLETE PROJECT FILES (.oamproj)
+In File menu use Export entire project to save one archive containing editor text, books, covers, recordings, Piper ONNX voices/configs, IPA dictionaries and all GUI voice/video options. Open entire project verifies integrity and restores the complete editing workspace. Resources are unpacked temporarily while the app is running; keep the saved .oamproj file.
+
+CHARACTER VOICES EVERYWHERE
+Under Voice Settings, choose Speaker for untagged text and enable Apply character profiles to Speak / Audio / Video / Batch. The main Speak button, Audio export, Video narration, batch conversion, and Combine Chapters all apply character voice profiles. Explicit [Character] tags override the selected default speaker. The main voice is a fallback if a character lacks a model; prerecorded audio is not resynthesized.
+
+
+
+
+## Scanned-book OCR and English spelling
+
+Use **Import scans** above the editor for scanned PDFs, images, multipage TIFFs or ZIP/CBZ image books. Choose adaptive black-and-white, Otsu, contrast, deskew, rotation and page-range options. Edit normally with single clicks, double clicks and drag selection. Right-click or Ctrl-click underlined words for spelling suggestions (or use Shift+F10 at the cursor), or use **Correct all OCR**; Ctrl+Z undoes corrections. Book Studio includes **Review chapter OCR / spelling**. Complete projects retain OCR settings, the recognition report and personal words. Use Help > Scanned books, OCR and English spelling for OCR instructions. See THIRD_PARTY_NOTICES.md for attribution.
+
+
+## Standalone Windows build repair — v1.0.13
+
+CHARACTER INTELLIGENCE UPGRADE — 1.0.20
+Find Characters now infers all unlocked profile controls, keeps descriptive
+identities consistent, and merges explicitly revealed names and aliases.
+Use Review Characters / Quotes to inspect evidence and uncertain passages.
+Save / Add Profile protects changed fields. Allow automatic updates for this
+profile makes all its settings eligible for the next scan. Put earlier identity
+labels into Aliases (separated by semicolons) to link a character manually.
+Import Name List adds UTF-8 text, CSV, JSON or GZip name hints for this session.
+The bundled 54,000+ names do not limit invented or Unicode names recognized
+from context. English has the richest attribution and description rules.
+Ambiguous quotes remain with Narrator; confidence scores are heuristic.
+All analysis is offline and CPU-only. See README for CLI examples and details.
+
+
+TEXT RENDERING HOTFIX — 1.0.21
+Animated videos safely use basic text layout when Pillow lacks libraqm.
+RAQM-enabled fonts retain advanced shaping; fonts without it no longer receive
+unsupported direction/language/font-feature arguments. Complex-script shaping
+still needs RAQM and a suitable font. Rebuild existing EXEs with the new source:
+py -3 build.py --repair
+
+MULTILINGUAL HANDWRITING/CALLIGRAPHY UPDATE
+The text-video effect dropdown offers separate TYPEWRITER (grapheme-by-grapheme),
+HANDWRITING (round-pen trace), and CALLIGRAPHY (angled broad-nib trace) engines.
+Both pen modes operate on fully shaped text. They are compatible with any Unicode
+script for which a suitable font and the required Pillow RAQM shaping support
+are installed. For Bengali and other Indic languages, choose a compatible
+script-specific handwriting font for natural letterforms. Set pen thickness
+(0 to auto-select) and broad-nib angle (-80 to 80 degrees) in the GUI. All
+modes work offline on CPU without optional OpenCV. Word/phrase timestamps may
+be read from SRT, VTT, JSON; otherwise synchronization is estimated from audio.
+Pen paths are reconstructed from glyph outlines, not guaranteed to reproduce
+traditional human stroke order.
+
+
+STROKE STUDIO — 1.0.23 (DRAWING-ORIENTED HANDWRITING / CALLIGRAPHY)
+Open Animated Audiobook Video > Open Stroke Studio. Enter an arbitrary Unicode
+character, conjunct or word, and draw the character with the mouse/tablet on
+the canvas. Release the pointer after each genuine pen lift. Adjust pressure
+and click Save drawing + pack. Import that JSON under Hand-drawn Unicode
+stroke library. Draw additional characters to extend the same pack. This
+separates letterform design from fonts and includes the brush's gesture order.
+
+Select handwriting or calligraphy, a drawing instrument (pencil, ballpoint,
+fountain, brush or broad nib), pen width, nib tilt, paper grain and dry-brush
+texture. Each frame reveals ink traced by the physical nib simulator. The final
+painted ink no longer consists of distorted font glyph pixels. In normal mode,
+unknown characters automatically use font-guided centerline paths; this
+fallback is not authentic script-specific stroke order. Use Strict drawn-only
+to require every character or whole-word template to have hand-authored paths.
+A script-shaping font is still required to lay out text at the correct widths.
+Bengali and other Indic/RTL scripts require the RAQM-capable Windows build.
+For true spoken-word synchronization import aligned JSON/SRT/VTT timing data.
+
+
+KOKORO, KITTEN, POCKET, COQUI — MANUAL VOICE DOWNLOADS
+
+Unlike the optional CPU engine dependencies, neural model weights are never
+fetched automatically on preview, Speak, export, character narration, or Coqui
+speaker discovery. Use Voices > Download Kokoro / Kitten / Pocket / Coqui
+voices (also available in Voice Settings). Select your engine, model variant,
+and one or more voices. Status shows Downloaded / Not downloaded. Click Download
+Selected or Download All Shown to install missing CPU dependencies
+and download the chosen assets without confirmation or completion popups. The download status
+and indeterminate progress bar remain visible. Kokoro and Pocket voice assets
+are tracked individually. All Kitten voices share their model's files; Coqui
+models include all their speakers. Pocket saves local voice states, avoiding
+subsequent sample downloads. Once installed, you can select these voices in
+the main window or Character Voice Studio and use them offline.
+
+If a model is missing, speech preview/export will give an error directing you
+to the manual GUI downloader. Discover Coqui Speakers requires that its model
+was previously downloaded. Saved projects retain the selection but do not
+embed optional neural model weights.
+
+
+OPENMUKTI AUDIO TIMELINE / PAUSE / CHARACTER / IPA / SOUND-EFFECT TAG MANUAL
+Version 1.0.27 — also available in Help > Complete User Manual
+=====================================================================
+
+WHAT THE TAGS DO
+----------------
+Square brackets direct speech timing, voices, sound effects and overlapping
+character dialogue. Tags do not themselves get spoken. Imported sounds live in
+the current project and are included when exporting a complete .oamproj file.
+The timed audio renderer uses FFmpeg, which must be available. Ordinary text
+without timing tags continues through the familiar sequential voice renderer.
+
+Voice models do not automatically change their pronunciation to make a line
+last a certain duration. Requested speaking time is accomplished by time-
+stretching synthesized audio using FFmpeg's atempo filter. Extreme adjustments
+may sound artificial. Supported speed ratio is 0.1× to 10×. Timing refers to
+the final mixed audio clock, not synchronized mouth movements in a video.
+
+1. CHARACTER / NARRATOR SELECTION
+----------------------------------
+[Mary]Hello!
+[John]How are you?
+[Narrator]The conversation continued.
+[Speaker: Mary]Hello!
+[Character: Mary]Hello!
+[spoken by Mary]Hello!
+[narrated by Mary]Hello!
+[Mary speaks]Hello!
+[Mary says]Hello!
+[Mary is speaking]Hello!
+[Mary talking]Hello!
+[Mary, duration: 3s]Hello!
+[spoken by Mary, speak for 3 seconds]Hello!
+[Let Mary speak, pause for 2 seconds]Hello!
+
+Speaker names must exist in Character Voice Studio; aliases work with the
+normal speaker-tag syntax. A speaker remains selected until a new speaker tag.
+Use the standard [Mary] format for maximum compatibility. The text following
+any recognized time/voice tag belongs to the selected current speaker.
+
+2. DURATION NOTATION (MILLISECONDS THROUGH HOURS)
+--------------------------------------------------
+All the following represent supported time expressions. Numerals may be
+integers or decimals. An ASCII space between a number and the unit is optional:
+
+520ms                 520 milliseconds          520 millisecond
+520 msec              520 msecs                 520 ms
+0.52s                 0.52 seconds              0.52 sec
+0.52 secs             half a second             0.5 second
+2s                    2 seconds                 two seconds
+3.19s                 3.19 seconds              3190 milliseconds
+1m                    1 min                     1 minute
+1mins                 1 minutes                 1.5 minutes
+3m 19s                3 minutes 19 seconds      3min19sec
+2h                    2 hr                      2 hours
+1h 20m                1 hour 20 minutes         1h20m30s
+0.5hr                 half an hour              1.25 hours
+00:02                 00:02.500                 01:02:03
+01:02:03.190          .25s                      0.25 sec
+
+Clock notation is MM:SS[.fraction] or HH:MM:SS[.fraction]. Clock seconds
+and minutes must be under 60. For units, suffixes are case-insensitive.
+A maximum individual time of 24 hours applies. Negative time and unknown
+unit names are rejected. Time ranges use a hyphen, en dash, em dash,
+"to" or "..". For an SFX range, end must exceed start.
+
+3. PAUSES BEFORE A LINE
+-----------------------
+[Mary][pause: 2s]Hi!
+[Mary][p:0.9s]Hi!
+[Mary][pause 2 seconds]Hi!
+[Mary][p=2s]Hi!
+[Mary][pause for 2 seconds]Hi!
+[Mary][wait for 2000ms]Hi!
+[Mary][wait: 2s]Hi!
+[Mary][silence: 2s]Hi!
+[Mary][delay: 2 seconds]Hi!
+[Mary][remain silent for 2 seconds]Hi!
+[Mary][be silent for 2 seconds]Hi!
+[Mary][2 seconds]Hi!
+[Mary][2s]Hi!
+[Mary][00:02]Hi!
+[Mary][1m 20s]Hi!
+[Mary][120000ms]Hi!
+[Mary, pause: 2s]Hi!
+[Mary, wait for two seconds]Hi!
+[pause: 2s][Mary]Hi!
+
+When a bare time is in its OWN square bracket, it means a pause. A pause
+occurs before the next speech section and is silent unless an SFX is scheduled
+within it. Multiple pause tags accumulate. The between-passage gap from the
+existing app settings is additional and remains in effect.
+
+4. TIMED SPEAKING / A TARGET SPEECH LENGTH
+------------------------------------------
+[Mary, 3s]Hi!
+[Mary, duration: 3s]Hi!
+[Mary, speech duration: 3 seconds]Hi!
+[Mary, speaking duration 3 seconds]Hi!
+[Mary, speak for 3 seconds]Hi!
+[Mary, say this in 3s]Hi!
+[Mary, length=3s]Hi!
+[Mary, take 3 seconds]Hi!
+[Mary, fit to 3s]Hi!
+[Mary][duration: 3s]Hi!
+[Mary][speak for 3s]Hi!
+[Mary][length: 3s]Hi!
+
+A bare duration INSIDE THE SAME bracket after the character name means
+speech time rather than pause time, when it is the ONLY bare time there.
+This distinction is necessary to support both [Mary, 3s] and [Mary][3s].
+Speech duration stretches or compresses the line; it is not a pause.
+
+5. COMBINED PAUSE AND SPEAKING DURATION
+--------------------------------------
+[Mary, 520ms, 3.19s]Please come to my party.
+[Mary, pause: 520ms, duration: 3.19s]Please come to my party.
+[Mary][pause: 520ms][speak for 3.19 seconds]Please come to my party.
+[spoken by Mary, wait for 520 milliseconds, speech duration 3.19 seconds]Please come.
+[Mary, 00:00.520, 00:03.190]Please come.
+
+When two bare durations occur within one bracket, the first denotes the
+pre-speech pause; the next denotes the speech target. For clarity, explicit
+"pause:" and "duration:" are preferable in longer complex scripts.
+
+6. IMPORTING SOUND EFFECTS INTO THE PROJECT
+-------------------------------------------
+Open the main window. Under VOICE SETTINGS choose:
+  Import / manage project sound effects
+Choose one or more audio files (.wav, .mp3, .m4a, .flac, .ogg, .opus,
+.aac, .aiff or .wma). The imported filename is the reference used by tags.
+Filenames must be unique in the project, ignoring letter case. To remove an
+asset, select it and click Remove selected. Removing an import does not delete
+the original audio file. Keep imported files available until you export the
+complete project; the .oamproj archive embeds the actual sound content.
+An .oamproj re-import restores assets to the project workspace. Reopened
+projects do not require the original filesystem path.
+
+Use ordinary exact filenames, for instance "door.mp3" and "rain.wav".
+A tag may NOT load an arbitrary disk file unless it has been imported into
+the project. If a file is not imported, the app reports an error. This limits
+unintended filesystem access and makes projects portable.
+
+7. SOUND EFFECTS IN A PAUSE
+---------------------------
+[Mary, 520ms, sfx:door.mp3(200ms-510ms), 3.19s]Hello!
+[Mary, pause: 520ms, sound effect:door.mp3(200ms-510ms), duration:3.19s]Hi!
+[Mary, wait for 520ms, audio:door.mp3(200ms to 510ms), 3.19s]Hello!
+[Mary, 520ms, play:door.mp3(0.2s-0.51s), 3.19s]Hello!
+
+An effect specified AFTER a pause field but BEFORE the speech-duration field
+is anchored to the beginning of the pause. In the first example the effect
+starts 200 ms into the pause and occupies 310 ms; Mary starts speech 520 ms
+after the preceding passage. Effects are mixed OVER the silence, not as
+replacement content. Effects whose range exceeds the pause are rejected.
+
+8. SOUND EFFECTS WHILE SOMEONE SPEAKS
+-------------------------------------
+[Mary, duration: 3.19s, sfx:birds.wav(2s-3s)]Hello!
+[Mary, 3.19s, sound effect:birds.wav(2s to 3s)]Hello!
+[Mary, 3.19s, play:birds.wav(2000ms-3000ms)]Hello!
+[Mary, 3.19s, audio:birds.wav(00:02..00:03)]Hello!
+[Mary, 3.19s, sfx:birds.wav(0s-1s), sfx:bell.mp3(2s-3s)]Hello!
+
+An effect specified AFTER the speech-duration field is anchored to the
+start of the speech, so the audio plays during the character's speech.
+The interval in parentheses is on the narration timeline (start–end), not
+a sample range taken from the source file. The effect is played from the
+beginning for the requested interval. Without a specified range, the sound
+is limited to the remaining part of the pause or speech. Different effects
+can be mixed at the same time.
+
+9. COMPLETE COMBINED EXAMPLE
+----------------------------
+[Alice, 520ms, sfx:abc.mp3(200ms-510ms), 3.19s, sfx:def.mp3(2s-3s)]Please will you go to my party?
+
+- Alice is the speaking character.
+- Silent pre-speech period is 0.520 second.
+- abc.mp3 plays from 0.200 to 0.510 second in that pause.
+- Alice starts at 0.520 second and finishes at 3.710 seconds.
+- Her synthesized utterance is fitted to 3.190 seconds.
+- def.mp3 plays from 2.000 to 3.000 seconds after Alice begins speaking.
+- abc.mp3 and def.mp3 must both have been imported into the project.
+
+10. BACKGROUND AMBIENCE / STREET NOISES / LOOPING
+-------------------------------------------------
+[background:street.mp3]
+[Narrator]The city was loud. [Mary]Let's cross the street.
+
+[ambient:rain.wav][Mary]It has started raining again.
+[ambience:forest.ogg][John]Did you hear the birds?
+[loop:traffic.mp3][Mary]Watch out!
+[background sound:street.wav][Narrator]Morning rush hour.
+
+Background audio is looped to the length of the rendered dialogue, at a lower
+mixing gain (22%). It is placed on an independent track. One-shot sound effects
+remain independent from background ambience. If you need a precise ambience
+fade envelope, or individual stereo automation, prepare a sound file with that
+envelope before importing it; this tag set does not synthesize an envelope.
+
+11. OVERLAPPING DIALOGUE (CHARACTERS SPEAK AT ONCE)
+---------------------------------------------------
+[Alice]The answer is— [John, overlap: 500ms]Wait, listen to me!
+[Mary]I need to say something. [John, speak over: 1s]So do I!
+[Mary, duration:4s]Our plan is simple. [John, overlap 2s]Really?
+[Mary]Hello. [John, simultaneous]Hi!
+
+"overlap" moves the NEW line earlier by the requested time relative to the
+end of the preceding line, keeping the previous line audible. Overlap is
+bounded at the beginning of the track (time 0). The shorter overlapping
+interval depends on how long the generated clips last.
+
+12. INTERRUPTIONS / CUTTING OFF A SPEAKER
+----------------------------------------
+[Alice, duration:4s]I was about to tell you what—
+[John, interrupt after 1.3s]Stop! I know already.
+
+[Alice]This is my explanation.
+[John, cut off after 350ms]No, let me speak.
+
+[Alice]Please listen!
+[John, stop previous at 0.7s]Never mind.
+
+An interruption starts a NEW speaker at the given offset FROM THE PREVIOUS
+speaker's START and trims the previous speaker's WAV at that same point. The
+previous speaker's source text is still synthesized in full before trimming.
+You cannot know in advance exactly which word will be interrupted because
+different model voices and pronunciations yield different speaking speeds.
+For word-accurate interruptions, divide the prior line into smaller segments
+and place interruption markers at the intended segment boundary.
+
+13. IPA + CHARACTER + PAUSE / SOUND EFFECT
+-----------------------------------------
+[Alice][ipa: həˈloʊ|hello]!
+[Alice, duration:2s]<ipa:həˈloʊ|hello> there!
+[spoken by Alice, pause for 250ms][ipa: bɔ̃ʒuʁ|bonjour]!
+[Alice, 300ms, sfx:click.wav(0ms-100ms), duration:1s]<ipa:həˈloʊ|hello>.
+
+The bracket style [ipa: phonemes|spoken fallback] is converted to the
+application's existing <ipa:phonemes|spoken fallback> format. The spoken
+fallback is necessary for engines which do not synthesize direct IPA. The
+older <ipa:...> notation, including language-aware dictionaries, still works.
+IPA and speaker tags can appear in any order as long as they form supported
+fields. Avoid nested square brackets. Angle-bracket IPA can be mixed with
+timeline tags and is useful when pronunciation should not be visible.
+
+14. FORMAL GRAMMAR AND COMBINATIONS
+-----------------------------------
+  script        := (text | '[' fields ']')*
+  fields        := field (',' field | ';' field)*
+  field         := character | pause | speech_duration | bare_duration
+                 | sfx | background | overlap | interruption | ipa
+  character     := known-name | 'Speaker: ' known-name
+                 | 'Character: ' known-name | 'spoken by ' known-name
+  pause         := ('pause'|'p'|'wait'|'delay'|'silence'|... ) ':'? time
+  speech_duration := ('duration'|'speech duration'|'speak for'|...) ':'? time
+  bare_duration := time
+  sfx           := ('sfx:'|'sound effect:'|'audio:'|'play:') filename
+                   [ '(' time '-' time ')' ]
+  background    := ('background:'|'ambient:'|'ambience:'|'loop:') filename
+  overlap       := ('overlap'|'talk over'|'speak over') ':'? time
+  interruption  := ('interrupt'|'cut off'|'stop previous') ['after'|'at'] time
+  ipa           := 'ipa:' phonemes [ '|' spoken_fallback ]
+  time          := (number unit)+ | HH:MM:SS[.fraction] | MM:SS[.fraction]
+
+For example these are valid:
+[Alice, pause:2s, duration:3s]Hi.
+[Alice; pause for 2 seconds; speech duration 3 seconds]Hi.
+[spoken by Alice, 2s, 3s, sfx:door.mp3(0.5s to 1.0s)]Hi.
+[Mary][pause:1m][duration:2.5s]Good morning.
+[ambient:traffic.wav][Alice, 520ms, sfx:click.wav(0ms-100ms), 3s]Hello.
+[Bob, overlap:2s, duration:4s]I'm speaking at the same time!
+[Bob, interrupt after 700ms, duration:1.5s]Wait!
+
+A bracketed tag containing no recognized directive is preserved as text.
+Unrecognized extra fields inside an otherwise recognized directive produce
+a clear error instead of silently shifting the timeline.
+This is a defined subset of English command phrasing, not an unrestricted
+natural-language AI instruction interpreter. Avoid ambiguous free-form prose
+inside tags. There are many supported spellings and combined forms, but not
+every conceivable sentence in English can be interpreted deterministically.
+
+15. NOTES AND LIMITATIONS
+-------------------------
+- FFmpeg is required for timed/overlapping/rendered sound scenes. It may
+  be bundled by the corresponding build or installed on the system.
+- A maximum of 256 simultaneous timeline clips per render is enforced.
+  Split exceptionally long scenes into chapters/sections.
+- The max duration per tag/scene is 24 hours. Large audio may require RAM
+  and disk space. The app does not download sounds or copyrighted recordings.
+- Starting playback with Speak uses the same rendered WAV as Export Audio.
+- Video creation uses that mixed WAV as its soundtrack. Captions display
+  the dialogue text and do not include timing markup.
+- Audio may sound unnatural at extreme time-stretch speeds.
+- Character/IPA model quality depends on the selected installed voice.
+- Speech without explicit timing continues using existing sentence pauses.
+- Imported SFX are included in .oamproj but original external locations are
+  still used until the project is exported and reopened.
+- Entire-project export bundles sound files, not non-Piper neural model weights.
+- Manual Piper/Neural voice downloads remain separate from SFX importing.
+- For major narration projects, listen to the finished mix and verify
+  sound levels and timing before publishing it.

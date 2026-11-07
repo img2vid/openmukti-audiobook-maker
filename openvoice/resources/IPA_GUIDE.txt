@@ -1,0 +1,30 @@
+CUSTOM IPA PRONUNCIATIONS — QUICK GUIDE
+
+Open Voices → IPA Pronunciation Editor, type a word or phrase, IPA transcription and language code, then Save + Activate.
+
+Examples:
+  hello     /həˈloʊ/     en       heh-low
+  বাংলা     /baŋla/      bn       বাংলা
+  Openmukti /oʊpənmukti/ *        Open Mukti
+
+Columns are: WORD / PHRASE, IPA, LANGUAGE, SPOKEN FALLBACK.
+
+Use * for all languages. Use ISO language codes like en, en-US, bn, hi, fr or ja for a specific language. Keep the language matched to your narrator or character profile.
+
+To export books with the rules, choose the IPA dictionary on the main window. In Character Voices, also set the IPA dictionary file and save the voice project.
+
+The app saves rules as UTF-8 JSON and accepts UTF-8 tab-delimited TSV.
+
+Direct IPA speech requires piper-tts Python and a model containing the phoneme symbols used by the IPA spelling. The older Piper text-only command-line program cannot synthesize arbitrary IPA directly. Other speech engines require the Spoken fallback, which is ordinary text and is only an approximation.
+
+A Piper ONNX model does not necessarily support every IPA sound or language. Missing symbols raise an error rather than silently disappearing.
+
+See Help > Complete User Manual for commands and troubleshooting.
+
+
+INLINE IPA IN STORIES
+
+[Narrator] Please say <həˈloʊ>.
+[Alice] Then say <ipa:bɔ̃ʒuʁ|bonjour>.
+
+Use <ipa:phonemes> for explicit markup, or <ipa:phonemes|regular text> to add a fallback for other engines. These tags work in the main editor, audio-only export, videos, chapters, batch conversion, and character narration. They override dictionaries in the tagged span. The Voices menu has an Insert inline IPA in text command. Piper Python and a compatible ONNX phoneme inventory are required for direct phoneme synthesis. If the model lacks a phoneme and there is no fallback, the app reports an error.

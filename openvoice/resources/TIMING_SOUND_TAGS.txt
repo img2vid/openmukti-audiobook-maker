@@ -1,0 +1,302 @@
+OPENMUKTI AUDIO TIMELINE / PAUSE / CHARACTER / IPA / SOUND-EFFECT TAG MANUAL
+Version 1.0.27 — also available in Help > Complete User Manual
+=====================================================================
+
+WHAT THE TAGS DO
+----------------
+Square brackets direct speech timing, voices, sound effects and overlapping
+character dialogue. Tags do not themselves get spoken. Imported sounds live in
+the current project and are included when exporting a complete .oamproj file.
+The timed audio renderer uses FFmpeg, which must be available. Ordinary text
+without timing tags continues through the familiar sequential voice renderer.
+
+Voice models do not automatically change their pronunciation to make a line
+last a certain duration. Requested speaking time is accomplished by time-
+stretching synthesized audio using FFmpeg's atempo filter. Extreme adjustments
+may sound artificial. Supported speed ratio is 0.1× to 10×. Timing refers to
+the final mixed audio clock, not synchronized mouth movements in a video.
+
+1. CHARACTER / NARRATOR SELECTION
+----------------------------------
+[Mary]Hello!
+[John]How are you?
+[Narrator]The conversation continued.
+[Speaker: Mary]Hello!
+[Character: Mary]Hello!
+[spoken by Mary]Hello!
+[narrated by Mary]Hello!
+[Mary speaks]Hello!
+[Mary says]Hello!
+[Mary is speaking]Hello!
+[Mary talking]Hello!
+[Mary, duration: 3s]Hello!
+[spoken by Mary, speak for 3 seconds]Hello!
+[Let Mary speak, pause for 2 seconds]Hello!
+
+Speaker names must exist in Character Voice Studio; aliases work with the
+normal speaker-tag syntax. A speaker remains selected until a new speaker tag.
+Use the standard [Mary] format for maximum compatibility. The text following
+any recognized time/voice tag belongs to the selected current speaker.
+
+2. DURATION NOTATION (MILLISECONDS THROUGH HOURS)
+--------------------------------------------------
+All the following represent supported time expressions. Numerals may be
+integers or decimals. An ASCII space between a number and the unit is optional:
+
+520ms                 520 milliseconds          520 millisecond
+520 msec              520 msecs                 520 ms
+0.52s                 0.52 seconds              0.52 sec
+0.52 secs             half a second             0.5 second
+2s                    2 seconds                 two seconds
+3.19s                 3.19 seconds              3190 milliseconds
+1m                    1 min                     1 minute
+1mins                 1 minutes                 1.5 minutes
+3m 19s                3 minutes 19 seconds      3min19sec
+2h                    2 hr                      2 hours
+1h 20m                1 hour 20 minutes         1h20m30s
+0.5hr                 half an hour              1.25 hours
+00:02                 00:02.500                 01:02:03
+01:02:03.190          .25s                      0.25 sec
+
+Clock notation is MM:SS[.fraction] or HH:MM:SS[.fraction]. Clock seconds
+and minutes must be under 60. For units, suffixes are case-insensitive.
+A maximum individual time of 24 hours applies. Negative time and unknown
+unit names are rejected. Time ranges use a hyphen, en dash, em dash,
+"to" or "..". For an SFX range, end must exceed start.
+
+3. PAUSES BEFORE A LINE
+-----------------------
+[Mary][pause: 2s]Hi!
+[Mary][p:0.9s]Hi!
+[Mary][pause 2 seconds]Hi!
+[Mary][p=2s]Hi!
+[Mary][pause for 2 seconds]Hi!
+[Mary][wait for 2000ms]Hi!
+[Mary][wait: 2s]Hi!
+[Mary][silence: 2s]Hi!
+[Mary][delay: 2 seconds]Hi!
+[Mary][remain silent for 2 seconds]Hi!
+[Mary][be silent for 2 seconds]Hi!
+[Mary][2 seconds]Hi!
+[Mary][2s]Hi!
+[Mary][00:02]Hi!
+[Mary][1m 20s]Hi!
+[Mary][120000ms]Hi!
+[Mary, pause: 2s]Hi!
+[Mary, wait for two seconds]Hi!
+[pause: 2s][Mary]Hi!
+
+When a bare time is in its OWN square bracket, it means a pause. A pause
+occurs before the next speech section and is silent unless an SFX is scheduled
+within it. Multiple pause tags accumulate. The between-passage gap from the
+existing app settings is additional and remains in effect.
+
+4. TIMED SPEAKING / A TARGET SPEECH LENGTH
+------------------------------------------
+[Mary, 3s]Hi!
+[Mary, duration: 3s]Hi!
+[Mary, speech duration: 3 seconds]Hi!
+[Mary, speaking duration 3 seconds]Hi!
+[Mary, speak for 3 seconds]Hi!
+[Mary, say this in 3s]Hi!
+[Mary, length=3s]Hi!
+[Mary, take 3 seconds]Hi!
+[Mary, fit to 3s]Hi!
+[Mary][duration: 3s]Hi!
+[Mary][speak for 3s]Hi!
+[Mary][length: 3s]Hi!
+
+A bare duration INSIDE THE SAME bracket after the character name means
+speech time rather than pause time, when it is the ONLY bare time there.
+This distinction is necessary to support both [Mary, 3s] and [Mary][3s].
+Speech duration stretches or compresses the line; it is not a pause.
+
+5. COMBINED PAUSE AND SPEAKING DURATION
+--------------------------------------
+[Mary, 520ms, 3.19s]Please come to my party.
+[Mary, pause: 520ms, duration: 3.19s]Please come to my party.
+[Mary][pause: 520ms][speak for 3.19 seconds]Please come to my party.
+[spoken by Mary, wait for 520 milliseconds, speech duration 3.19 seconds]Please come.
+[Mary, 00:00.520, 00:03.190]Please come.
+
+When two bare durations occur within one bracket, the first denotes the
+pre-speech pause; the next denotes the speech target. For clarity, explicit
+"pause:" and "duration:" are preferable in longer complex scripts.
+
+6. IMPORTING SOUND EFFECTS INTO THE PROJECT
+-------------------------------------------
+Open the main window. Under VOICE SETTINGS choose:
+  Import / manage project sound effects
+Choose one or more audio files (.wav, .mp3, .m4a, .flac, .ogg, .opus,
+.aac, .aiff or .wma). The imported filename is the reference used by tags.
+Filenames must be unique in the project, ignoring letter case. To remove an
+asset, select it and click Remove selected. Removing an import does not delete
+the original audio file. Keep imported files available until you export the
+complete project; the .oamproj archive embeds the actual sound content.
+An .oamproj re-import restores assets to the project workspace. Reopened
+projects do not require the original filesystem path.
+
+Use ordinary exact filenames, for instance "door.mp3" and "rain.wav".
+A tag may NOT load an arbitrary disk file unless it has been imported into
+the project. If a file is not imported, the app reports an error. This limits
+unintended filesystem access and makes projects portable.
+
+7. SOUND EFFECTS IN A PAUSE
+---------------------------
+[Mary, 520ms, sfx:door.mp3(200ms-510ms), 3.19s]Hello!
+[Mary, pause: 520ms, sound effect:door.mp3(200ms-510ms), duration:3.19s]Hi!
+[Mary, wait for 520ms, audio:door.mp3(200ms to 510ms), 3.19s]Hello!
+[Mary, 520ms, play:door.mp3(0.2s-0.51s), 3.19s]Hello!
+
+An effect specified AFTER a pause field but BEFORE the speech-duration field
+is anchored to the beginning of the pause. In the first example the effect
+starts 200 ms into the pause and occupies 310 ms; Mary starts speech 520 ms
+after the preceding passage. Effects are mixed OVER the silence, not as
+replacement content. Effects whose range exceeds the pause are rejected.
+
+8. SOUND EFFECTS WHILE SOMEONE SPEAKS
+-------------------------------------
+[Mary, duration: 3.19s, sfx:birds.wav(2s-3s)]Hello!
+[Mary, 3.19s, sound effect:birds.wav(2s to 3s)]Hello!
+[Mary, 3.19s, play:birds.wav(2000ms-3000ms)]Hello!
+[Mary, 3.19s, audio:birds.wav(00:02..00:03)]Hello!
+[Mary, 3.19s, sfx:birds.wav(0s-1s), sfx:bell.mp3(2s-3s)]Hello!
+
+An effect specified AFTER the speech-duration field is anchored to the
+start of the speech, so the audio plays during the character's speech.
+The interval in parentheses is on the narration timeline (start–end), not
+a sample range taken from the source file. The effect is played from the
+beginning for the requested interval. Without a specified range, the sound
+is limited to the remaining part of the pause or speech. Different effects
+can be mixed at the same time.
+
+9. COMPLETE COMBINED EXAMPLE
+----------------------------
+[Alice, 520ms, sfx:abc.mp3(200ms-510ms), 3.19s, sfx:def.mp3(2s-3s)]Please will you go to my party?
+
+- Alice is the speaking character.
+- Silent pre-speech period is 0.520 second.
+- abc.mp3 plays from 0.200 to 0.510 second in that pause.
+- Alice starts at 0.520 second and finishes at 3.710 seconds.
+- Her synthesized utterance is fitted to 3.190 seconds.
+- def.mp3 plays from 2.000 to 3.000 seconds after Alice begins speaking.
+- abc.mp3 and def.mp3 must both have been imported into the project.
+
+10. BACKGROUND AMBIENCE / STREET NOISES / LOOPING
+-------------------------------------------------
+[background:street.mp3]
+[Narrator]The city was loud. [Mary]Let's cross the street.
+
+[ambient:rain.wav][Mary]It has started raining again.
+[ambience:forest.ogg][John]Did you hear the birds?
+[loop:traffic.mp3][Mary]Watch out!
+[background sound:street.wav][Narrator]Morning rush hour.
+
+Background audio is looped to the length of the rendered dialogue, at a lower
+mixing gain (22%). It is placed on an independent track. One-shot sound effects
+remain independent from background ambience. If you need a precise ambience
+fade envelope, or individual stereo automation, prepare a sound file with that
+envelope before importing it; this tag set does not synthesize an envelope.
+
+11. OVERLAPPING DIALOGUE (CHARACTERS SPEAK AT ONCE)
+---------------------------------------------------
+[Alice]The answer is— [John, overlap: 500ms]Wait, listen to me!
+[Mary]I need to say something. [John, speak over: 1s]So do I!
+[Mary, duration:4s]Our plan is simple. [John, overlap 2s]Really?
+[Mary]Hello. [John, simultaneous]Hi!
+
+"overlap" moves the NEW line earlier by the requested time relative to the
+end of the preceding line, keeping the previous line audible. Overlap is
+bounded at the beginning of the track (time 0). The shorter overlapping
+interval depends on how long the generated clips last.
+
+12. INTERRUPTIONS / CUTTING OFF A SPEAKER
+----------------------------------------
+[Alice, duration:4s]I was about to tell you what—
+[John, interrupt after 1.3s]Stop! I know already.
+
+[Alice]This is my explanation.
+[John, cut off after 350ms]No, let me speak.
+
+[Alice]Please listen!
+[John, stop previous at 0.7s]Never mind.
+
+An interruption starts a NEW speaker at the given offset FROM THE PREVIOUS
+speaker's START and trims the previous speaker's WAV at that same point. The
+previous speaker's source text is still synthesized in full before trimming.
+You cannot know in advance exactly which word will be interrupted because
+different model voices and pronunciations yield different speaking speeds.
+For word-accurate interruptions, divide the prior line into smaller segments
+and place interruption markers at the intended segment boundary.
+
+13. IPA + CHARACTER + PAUSE / SOUND EFFECT
+-----------------------------------------
+[Alice][ipa: həˈloʊ|hello]!
+[Alice, duration:2s]<ipa:həˈloʊ|hello> there!
+[spoken by Alice, pause for 250ms][ipa: bɔ̃ʒuʁ|bonjour]!
+[Alice, 300ms, sfx:click.wav(0ms-100ms), duration:1s]<ipa:həˈloʊ|hello>.
+
+The bracket style [ipa: phonemes|spoken fallback] is converted to the
+application's existing <ipa:phonemes|spoken fallback> format. The spoken
+fallback is necessary for engines which do not synthesize direct IPA. The
+older <ipa:...> notation, including language-aware dictionaries, still works.
+IPA and speaker tags can appear in any order as long as they form supported
+fields. Avoid nested square brackets. Angle-bracket IPA can be mixed with
+timeline tags and is useful when pronunciation should not be visible.
+
+14. FORMAL GRAMMAR AND COMBINATIONS
+-----------------------------------
+  script        := (text | '[' fields ']')*
+  fields        := field (',' field | ';' field)*
+  field         := character | pause | speech_duration | bare_duration
+                 | sfx | background | overlap | interruption | ipa
+  character     := known-name | 'Speaker: ' known-name
+                 | 'Character: ' known-name | 'spoken by ' known-name
+  pause         := ('pause'|'p'|'wait'|'delay'|'silence'|... ) ':'? time
+  speech_duration := ('duration'|'speech duration'|'speak for'|...) ':'? time
+  bare_duration := time
+  sfx           := ('sfx:'|'sound effect:'|'audio:'|'play:') filename
+                   [ '(' time '-' time ')' ]
+  background    := ('background:'|'ambient:'|'ambience:'|'loop:') filename
+  overlap       := ('overlap'|'talk over'|'speak over') ':'? time
+  interruption  := ('interrupt'|'cut off'|'stop previous') ['after'|'at'] time
+  ipa           := 'ipa:' phonemes [ '|' spoken_fallback ]
+  time          := (number unit)+ | HH:MM:SS[.fraction] | MM:SS[.fraction]
+
+For example these are valid:
+[Alice, pause:2s, duration:3s]Hi.
+[Alice; pause for 2 seconds; speech duration 3 seconds]Hi.
+[spoken by Alice, 2s, 3s, sfx:door.mp3(0.5s to 1.0s)]Hi.
+[Mary][pause:1m][duration:2.5s]Good morning.
+[ambient:traffic.wav][Alice, 520ms, sfx:click.wav(0ms-100ms), 3s]Hello.
+[Bob, overlap:2s, duration:4s]I'm speaking at the same time!
+[Bob, interrupt after 700ms, duration:1.5s]Wait!
+
+A bracketed tag containing no recognized directive is preserved as text.
+Unrecognized extra fields inside an otherwise recognized directive produce
+a clear error instead of silently shifting the timeline.
+This is a defined subset of English command phrasing, not an unrestricted
+natural-language AI instruction interpreter. Avoid ambiguous free-form prose
+inside tags. There are many supported spellings and combined forms, but not
+every conceivable sentence in English can be interpreted deterministically.
+
+15. NOTES AND LIMITATIONS
+-------------------------
+- FFmpeg is required for timed/overlapping/rendered sound scenes. It may
+  be bundled by the corresponding build or installed on the system.
+- A maximum of 256 simultaneous timeline clips per render is enforced.
+  Split exceptionally long scenes into chapters/sections.
+- The max duration per tag/scene is 24 hours. Large audio may require RAM
+  and disk space. The app does not download sounds or copyrighted recordings.
+- Starting playback with Speak uses the same rendered WAV as Export Audio.
+- Video creation uses that mixed WAV as its soundtrack. Captions display
+  the dialogue text and do not include timing markup.
+- Audio may sound unnatural at extreme time-stretch speeds.
+- Character/IPA model quality depends on the selected installed voice.
+- Speech without explicit timing continues using existing sentence pauses.
+- Imported SFX are included in .oamproj but original external locations are
+  still used until the project is exported and reopened.
+- Entire-project export bundles sound files, not non-Piper neural model weights.
+- Manual Piper/Neural voice downloads remain separate from SFX importing.
+- For major narration projects, listen to the finished mix and verify
+  sound levels and timing before publishing it.

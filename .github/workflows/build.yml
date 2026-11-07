@@ -1,0 +1,327 @@
+name: Build portable releases
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify required source modules and bundled resources
+        run: python scripts/verify_repository_assets.py
+      - name: Install production test dependencies
+        run: python -m pip install ".[studio,video]" pypdf
+      - name: Install desktop test display
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb python3-tk ffmpeg tesseract-ocr
+      - run: python -m unittest discover -s tests -v
+      - name: Exercise desktop labels, keyboard traversal and the Studio windows
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run -a python -m openvoice studio test accessibility
+          xvfb-run -a python tests/gui_production_studio_smoke.py
+      - run: python -m compileall -q openvoice scripts packaging build.py build_select.py build_detect_os.py build_all_platforms.py
+      - run: python build.py --list-targets
+
+  windows:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            architecture: x64
+          - runner: windows-11-arm
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: ${{ matrix.architecture }}
+      - name: Build and verify independent unsigned EXEs
+        run: python build.py --verify-runtime
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Openmukti-Windows-${{ matrix.architecture }}
+          if-no-files-found: error
+          path: dist/*-Standalone-EXEs.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Windows-${{ matrix.architecture }}-reports
+          path: |
+            build-logs/
+            dist/*.json
+            dist/*UNVERIFIED*.zip
+
+  linux:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            architecture: x86_64
+          - runner: ubuntu-22.04-arm
+            architecture: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install native packaging and OCR tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk tesseract-ocr tesseract-ocr-eng tesseract-ocr-osd rpm zstd flatpak flatpak-builder xvfb libfuse2 desktop-file-utils
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+      - name: Build tar, deb, rpm, AppImage, Flatpak and Arch packages
+        run: xvfb-run -a python build.py --verify-runtime --verify-gui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-Linux-${{ matrix.architecture }}
+          if-no-files-found: error
+          path: dist/
+
+  additional-linux-architectures:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/386
+            architecture: i686
+          - platform: linux/arm/v7
+            architecture: armv7
+          - platform: linux/ppc64le
+            architecture: ppc64le
+          - platform: linux/s390x
+            architecture: s390x
+          - platform: linux/riscv64
+            architecture: riscv64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - name: Build system packages inside the target architecture's Debian image
+        env:
+          TARGET_PLATFORM: ${{ matrix.platform }}
+        run: |
+          docker run --rm --platform "$TARGET_PLATFORM" -v "$PWD:/src" -w /src debian:trixie-slim sh -euxc '
+            apt-get update
+            apt-get install -y --no-install-recommends ca-certificates python3 python3-tk python3-pil python3-numpy python3-opencv tesseract-ocr tesseract-ocr-eng tesseract-ocr-osd poppler-utils ffmpeg espeak-ng xz-utils
+            python3 build.py --profile system --formats tar,deb
+          '
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-Linux-${{ matrix.architecture }}-system-runtime
+          path: dist/
+          if-no-files-found: error
+
+  macos:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            architecture: x86_64
+          - runner: macos-15
+            architecture: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: brew install tesseract ffmpeg
+      - name: Build portable runtime and macOS application DMG
+        run: python build.py --verify-runtime
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-macOS-${{ matrix.architecture }}
+          if-no-files-found: error
+          path: dist/
+
+  freebsd:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/freebsd-vm@v1.5.9
+        with:
+          release: '14.4'
+          arch: ${{ matrix.arch }}
+          usesh: true
+          prepare: pkg install -y ca_root_nss python311
+          run: sh scripts/ci_vm.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-FreeBSD-${{ matrix.arch }}-system-runtime
+          path: dist/
+          if-no-files-found: error
+
+  openbsd:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/openbsd-vm@v1.4.9
+        with:
+          release: '7.9'
+          arch: ${{ matrix.arch }}
+          usesh: true
+          prepare: pkg_add -I python%3.13
+          run: sh scripts/ci_vm.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-OpenBSD-${{ matrix.arch }}-system-runtime
+          path: dist/
+          if-no-files-found: error
+
+  netbsd:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/netbsd-vm@v1.5.2
+        with:
+          release: '10.1'
+          arch: ${{ matrix.arch }}
+          usesh: true
+          prepare: /usr/sbin/pkg_add -u mozilla-rootcerts-openssl python312
+          run: sh scripts/ci_vm.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-NetBSD-${{ matrix.arch }}-system-runtime
+          path: dist/
+          if-no-files-found: error
+
+  dragonfly:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/dragonflybsd-vm@v1.3.4
+        with:
+          release: '6.4.2'
+          arch: x86_64
+          usesh: true
+          prepare: pkg install -y ca_root_nss python311
+          run: sh scripts/ci_vm.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-DragonFly-x86_64-system-runtime
+          path: dist/
+          if-no-files-found: error
+
+  solaris:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/solaris-vm@v1.4.2
+        with:
+          release: '11.4-gcc'
+          arch: x86_64
+          usesh: true
+          prepare: pkg install --accept runtime/python-311 || test $? -eq 4
+          run: sh scripts/ci_vm.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-Solaris-x86_64-system-runtime
+          path: dist/
+          if-no-files-found: error
+
+  illumos:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/omnios-vm@v1.3.7
+        with:
+          release: 'r151054-build'
+          arch: x86_64
+          usesh: true
+          prepare: pkg install --accept runtime/python-311 || test $? -eq 4
+          run: sh scripts/ci_vm.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-illumos-x86_64-system-runtime
+          path: dist/
+          if-no-files-found: error
+
+  # Opt in by defining the repository variable documented in README.md.
+  # Native runners can add ARMv7, RISC-V, POWER, s390x, SPARC, AIX or other Unix hosts.
+  additional-native-runners:
+    needs: checks
+    if: github.event_name != 'pull_request' && vars.OPENMUKTI_NATIVE_RUNNERS != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(vars.OPENMUKTI_NATIVE_RUNNERS || '[{"id":"disabled","labels":["self-hosted"]}]') }}
+    runs-on: ${{ matrix.target.labels }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build on the configured native host
+        shell: bash
+        env:
+          OPENMUKTI_APK_DEPENDENCIES: ${{ matrix.target.apk_dependencies || '' }}
+          OPENMUKTI_XBPS_DEPENDENCIES: ${{ matrix.target.xbps_dependencies || '' }}
+          OPENMUKTI_PKG_DEPENDENCIES: ${{ toJSON(matrix.target.pkg_dependencies || fromJSON('{}')) }}
+          OPENMUKTI_BSD_DEPENDENCIES: ${{ toJSON(matrix.target.bsd_dependencies || fromJSON('[]')) }}
+          OPENMUKTI_IPS_DEPENDENCIES: ${{ toJSON(matrix.target.ips_dependencies || fromJSON('[]')) }}
+        run: ${{ matrix.target.python || 'python3' }} build.py --profile ${{ matrix.target.profile || 'system' }} --formats ${{ matrix.target.formats || 'tar' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Openmukti-${{ matrix.target.id }}
+          path: dist/
+          if-no-files-found: error

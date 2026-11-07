@@ -1,0 +1,148 @@
+# Tesseract OCR and English correction
+
+Openmukti imports scanned/mixed PDFs, page images, multipage TIFFs, image folders
+and ZIP/CBZ image books. Recognition and spelling run locally on the CPU.
+
+## Import and correct a book
+
+1. Select **Import scans** above the main editor, or **File → Import scanned PDF /
+   images / ZIP book**. **Open document** also routes these formats to OCR.
+   For a directory, use **File → Import book page image folder**.
+2. Choose preprocessing, language, DPI and any page range, then **Start OCR import**.
+   **Cancel / Close** stops recognition without applying partial text.
+3. Right-click or Ctrl-click an underlined word to see suggestions, then click
+   the intended spelling. Alternatively put the cursor in it and press
+   **Shift+F10** or **Ctrl+period**. Ordinary clicks remain available for editing.
+4. Select **Correct all OCR** to apply the top suggestion for every issue that has
+   a suggestion. **Ctrl+Z** undoes the entire operation in one step. A conservative
+   option is **Tools → Apply high-confidence OCR fixes only**.
+5. Use **Add / ignore this word in this project** for character names and specialist
+   words. **Tools → English spelling / OCR settings** imports personal word lists.
+
+OCR and spelling suggestions cannot guarantee every intended word. Unknown words
+without plausible suggestions remain underlined. Real words used incorrectly,
+names, numbers, tables and complex reading order can need manual review. Confidence
+is an estimate from Tesseract, not proof of correctness.
+
+## Preprocessing options
+
+| Control | Behavior |
+| --- | --- |
+| Auto | Adaptive black-and-white thresholding; if confidence is low, also tries enhanced grayscale and selects using confidence and word coverage. |
+| Adaptive | Local black-and-white thresholding for shadows and uneven lighting. |
+| Otsu | Global black-and-white thresholding for evenly lit scans. |
+| Contrast | Grayscale normalization and adjustable contrast; useful for faint text. |
+| Original | Grayscale with a white margin, without contrast, denoise or deskew. |
+| Remove speckle noise | Median filtering before thresholding. |
+| Deskew | Projection-based correction of small tilts up to five degrees. |
+| Detect rotated pages | Tesseract OSD corrects confident 90/180/270-degree rotations; requires osd data. |
+| Split spreads | Splits wide images at the middle, left page then right page. |
+| PDF DPI | 150–600 DPI, bounded by the work-image pixel limit; default 300. |
+| Segmentation | 3: book layout; 4: column; 6: text block; 11/12: sparse text. |
+
+Transparency is flattened onto white. Dark backgrounds are inverted in processing
+modes. PDF pages are assessed separately: usable text layers remain unchanged,
+while scanned pages are rendered and recognized. **Force OCR** also recognizes
+pages whose existing text layer is inaccurate or incomplete. Layout and reading
+order of tables, footnotes and complex columns still need review.
+
+ZIP/folder pages use natural filename order (`page1`, `page2`, `page10`); TIFF
+frames keep source order. Page ranges count source pages/frames before spread
+splitting, separately for each selected file. Multiple selected images are joined
+in natural filename order. Page boundaries remain as form feeds without adding
+synthetic page labels to the narration.
+
+ZIP images are read without extracting paths. Imports reject unsafe paths,
+symbolic links, encrypted pages, images over 80 MiB / 60 megapixels, archives over
+2 GiB expanded / 30,000 entries, and excessive text. Work images are bounded to
+24 megapixels. Tesseract defaults to two OpenMP threads. Source scans stay unchanged.
+
+Ordinary clicks position the cursor. Double-click selects a word and dragging
+selects text; neither opens a spelling popup. You can also open suggestions at
+the cursor with Shift+F10 or Ctrl+period. Closing a popup or choosing a correction
+returns keyboard focus to the editor.
+
+## Book Studio and complete projects
+
+The importer can also add recognized text to Book Studio. **Add many ebooks**
+accepts scanned PDFs, images and ZIP/CBZ books. Select a chapter and choose
+**Review chapter OCR / spelling**, or double-click it. The chapter editor has the
+same underlines, suggestion popup, correction button and undo. **Save chapter**
+updates the text used for audiobook export; **Cancel** discards its edits.
+
+The main editor and Book Studio chapters are separate buffers. If an import is
+added to both, review and save the chapter before exporting that book. Main-editor
+edits do not automatically overwrite book chapters.
+
+**Export entire project (.oamproj)** preserves recognized/edited text, OCR settings,
+page confidence report, personal spelling words and existing voice/book/video
+settings. OCR runtime binaries are not stored inside a project. Page images are
+not automatically copied into the project unless selected as existing book/video
+resources; retain the original scans for comparison.
+
+## Source setup
+
+Python **3.12** is recommended for source usage with native imaging wheels:
+
+```sh
+python -m pip install ".[ocr]"
+python -m openvoice gui
+```
+
+Install Tesseract 5 with English `eng` and orientation `osd` data on the source-run
+computer. On Debian/Ubuntu:
+
+```sh
+sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-osd python3-tk
+```
+
+For Windows source usage, install a Windows Tesseract distribution and put
+`tesseract.exe` on PATH, or set `OPENMUKTI_TESSERACT` to its full path. The standard
+`C:\Program Files\Tesseract-OCR` location is detected automatically. Other OCR
+languages require their matching traineddata; use codes such as `eng+hin`.
+
+English spelling uses the bundled dictionary without a separate spelling package,
+Node.js process, server or API key. British/Indian and American variants are accepted
+without forcing the text into another dialect.
+
+## Portable Windows builds
+
+This source archive contains code and build recipes, **not prebuilt EXEs**.
+Use `py -3 build.py` on Windows x64 with supported Python installed on
+that build PC (3.12 recommended; 3.10–3.15 accepted). **Tesseract does not need
+to be installed on either the build PC or the destination PC.** The builder
+fetches a verified private build tool, resolves and stages Tesseract with all
+its DLL dependencies and English/orientation data, and embeds that runtime in
+each main EXE. No administrator installation or Chocolatey is required.
+
+Each main EXE also embeds Python, the English dictionary, native Piper/OCR
+workers, FFmpeg and FFprobe. The native workers use isolated Python 3.12 for
+wheel compatibility. The finished EXEs run independently without neighboring
+runtime folders or helper executables. They temporarily extract their embedded
+components while running.
+
+A release is packaged only after each EXE passes checks in an isolated folder
+with a system-only PATH, including real OCR. See `README.md`
+for the current instructions and `build-logs/windows-build.log` if a build fails.
+Windows EXEs must still be built and verified on Windows.
+
+## Command line
+
+```sh
+python -m openvoice ocr --status
+python -m openvoice ocr book.pdf -w book.txt
+python -m openvoice ocr pages.zip --preprocessing otsu --dpi 300 -w book.txt
+python -m openvoice ocr ./page-images --first-page 5 --last-page 20 -w excerpt.txt
+python -m openvoice ocr scans.tiff --no-rotate --psm 6 --json -w report.json
+python -m openvoice ocr book.pdf --force-ocr --correct -w corrected.txt
+python -m openvoice spellcheck -f book.txt --json
+python -m openvoice spellcheck -f book.txt --correct -w corrected.txt
+python -m openvoice spellcheck -f book.txt --correct --safe-only -w cautious.txt
+```
+
+With `ocr --correct`, JSON reports contain corrected page text and the original
+recognition confidence. That confidence describes OCR, not later spelling changes.
+Ordinary document imports in CLI, batch and book flows also recognize scans.
+
+
+Attribution: see THIRD_PARTY_NOTICES.md and the bundled dictionary/Tesseract license files.

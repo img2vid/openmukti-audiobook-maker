@@ -1,0 +1,103 @@
+OPENMUKTI AUDIOBOOK MAKER 1.1.2
+Production guide and developer reference
+
+GETTING STARTED
+Run python -m openvoice gui from the source folder. Python 3.10 or later and Tk are required. Open Studio → Start setup. Pick a CPU profile and a cache folder, then download the voices you plan to use through Voices. A computer with FFmpeg compiled with Flite can render the English example without downloading a model. Use Studio → Run tests → render to check real speech on your machine.
+
+To install the editing, language and security extras in a source environment, run
+    python -m pip install ".[studio,video,ocr]"
+FFmpeg, FFprobe, Tesseract and language data must be available to the active installation. The operating-system build scripts assemble supported bundled tools. The Calibre ebook-convert command enables older DRM-free Kindle import. Optional system ICU, PyICU or uconv supplies transliteration. Individual backends and Python wheels depend on the operating system and architecture.
+
+PROJECT WORKSPACE
+Studio → Project tabs opens multiple complete projects. The first tab copies the current work. Open read-only protects a tab, including an in-place save. Use Save copy for a new file. Compare edits shows saved and current text side by side. Each save records manuscript changes. Editorial rules live inside the project archive. Configure protected terminology, preferred spellings, built-in grammar rules, and optional local LanguageTool settings. The rules learn a replacement after it occurs in two reviewed revisions. Protect selection prevents edits to the selected text. The chapter navigator supports dragging, keyboard move buttons and heading formatting.
+
+Open project files from older releases directly. To produce a version 2 copy, run
+    python -m openvoice studio migrate older.oamproj current.oamproj
+For an archive with missing assets, use Studio → Import and OCR → Recover project assets. The recovery tool searches your selected folder by content hash. It can recover an asset whose filename changed. A source file with matching contents must still exist.
+
+IMPORT AND OCR
+Select several local files, drop them onto the manuscript with tkinterdnd2 installed, or use the watched-folder inbox. Stable files appear in the inbox ready to import. Import presets can choose extensions, recursion, text operations, headings, footnote placement and table narration. Open Import web article to fetch an explicitly entered HTTP or HTTPS address.
+    python -m openvoice studio import chapter.docx chapter2.odt --preset examples/import-rules.json -w book.txt
+    python -m openvoice ocr scan.png --enhance-blur --historic-print -w page.txt
+    python -m openvoice studio ocr-layout scan.png review.html --language eng --psm 3 --compare-psm 6
+Open the review HTML to inspect confidence boxes over the processed scan, compare segmentation modes, edit and save the recognized text. Choose .json for word coordinates, column boundaries, ruled table cells and hOCR style information. Positions refer to the preprocessed raster. Use --margin-box LEFT TOP RIGHT BOTTOM on ocr-layout to transcribe a margin separately. --margin-language selects an installed margin-specific model. Body text and notes are exported separately. Faint separators, damaged type and handwriting can require manual correction.
+
+CAST AND NARRATION
+A performance score can assign an engine, voice, language and approved backups per passage. Profiles can inherit settings. A scene can override the cast and choose a narrator. Named takes replace selected profiles for an alternative delivery. The test_text field supplies a reusable audition script.
+    python -m openvoice studio score examples/performance-score.json chapter.wav --cache-dir cache
+    python -m openvoice studio audition examples/performance-score.json audition-library
+    python -m openvoice studio cast-map book.txt speakers.html --name Mira
+    python -m openvoice studio emphasis book.txt
+    python -m openvoice studio cast search voices.json Mira
+    python -m openvoice studio cast split voices.json Mira --target Maya --passage 2 --output corrected.json
+    python -m openvoice studio passages book.txt chunks --engine flite --only 3
+The render cache saves verified, complete speech units, so rerunning a job regenerates changed or damaged chunks. A passage directory includes a manifest suitable for segment-audit. Configure the desktop cache or pass --cache-dir on ordinary render jobs.
+    python -m openvoice studio serve --engine flite --port 8765
+The loopback service accepts POST /speak or /stream and JSON containing a text string. /speak returns a WAV. /stream returns newline-delimited JSON with separately playable base64 WAV chunks and a completion record. Use studio stream for one-chunk lookahead during local playback. Studio → Read along highlights the passage being played in the main editor. Preview chapter openings plays multiple excerpts in order.
+
+SSML AND PROSODY
+The portable SSML reader supports speak, p, s, voice, lang, sub, phoneme with IPA, break, mark, emphasis, prosody, emotion and selected say-as interpretations. Unsupported markup raises a descriptive error. A standalone SSML file can use the default narrator. Put named voices and approved local sound paths in a JSON score. Prosody accepts named settings, percentages for rate, semitones with st for pitch, and dB for volume. An audio src names a sound defined in the score. Scene pace, gain_db and semitones curves interpolate across passages. A passage prosody_curve interpolates through one recording. Emotions use bundled acoustic presets. The homographs section supplies context-specific IPA readings. A named breath_sound with breath_after_passages adds approved local breath recordings. No breath files are fetched.
+
+MULTILINGUAL PRODUCTION
+    python -m openvoice studio language-spans mixed.txt
+    python -m openvoice studio localize bengali.txt spoken.txt --locale bn-IN --numbers --currency INR --dates
+    python -m openvoice studio localize bengali.txt roman.txt --locale bn --romanization Bengali-Latin
+    python -m openvoice studio test languages
+Use cast_by_language in a score to switch installed voices at script changes. Detected language and speaker attribution are editable heuristics. Romanization suggestions are written to a separate output. Unicode font shaping and drawing remain available through the existing text animation and Stroke Studio tools.
+
+AUDIO AND MIXING
+Open Studio → Sound timeline, add clips and assign narration, music, effects or ambience. Drag horizontally to change a start time. Edit clip exposes offsets, durations, volume curves, fades, stereo pan, loudness targets, room presets, licensing fields and optional impulse recordings. Looping clips require a duration. Set loop_crossfade in seconds to blend the boundary of an ambient loop. Find cut points suggests low-energy markers. Preview a selected clip or the first ten seconds of the mix. Export stems writes separate WAV tracks.
+    python -m openvoice studio mix mix.json mastered.wav
+    python -m openvoice studio stems mix.json stems
+    python -m openvoice studio sound-credits mix.json
+    python -m openvoice studio signal mastered.wav --output signal.json
+    python -m openvoice studio crossfade first.wav second.wav joined.wav --seconds 0.5
+    python -m openvoice studio compare-mixes approved.wav mastered.wav
+Open Waveform editor to drag or type selection bounds, audition a passage, save a cut or inspect a spectrogram. Signal analysis flags isolated spikes, near-silence, repeating sample blocks and clipping as review candidates.
+
+COVER, VIDEO AND SUBTITLES
+Open Studio → Cover designer. Start with a template, add and move layers, edit crop and framing, set start/end times, add a watermark, choose colors, or organize comic panels in reading order. Save a reusable design JSON. Export a PNG cover or use the design in the project video. Exported PNGs retain illustration descriptions as metadata. Grid and safe-area guides are available in preview. Timing units are seconds and canvas boxes are fractions between zero and one.
+    python -m openvoice studio design book.json --title "The Window" --byline "Mira Sen"
+    python -m openvoice studio artwork book.json cover.png
+    python -m openvoice video --audio chapter.wav --storyboard book.json --dimensions 1280x720 -w chapter.mp4
+    python -m openvoice studio layout-check book.json
+Layers support image, text, rectangle, notebook, progress, correction and waveform. Image layers support crop, automatic focus, pan and zoom. Layer transitions include fade, dissolve and wipes. A correction layer accepts original and text and animates crossing out, erasing and rewriting. Set safe or avoid_overlap on a text layer or auto_layout on a design. If the text cannot fit the chosen boxes, adjust their size or active times. Caption design adjusts the book-text color preset and horizontal safe margin. The subtitle editor validates timing and saves SRT, WebVTT or JSON. Open Split manuscript and preview to scrub artwork and sound while editing.
+
+QUEUE AND PERFORMANCE
+    python -m openvoice studio queue jobs.sqlite add --priority 5 -- render -f book.txt -w book.wav
+    python -m openvoice studio queue jobs.sqlite work --follow --profile low --min-disk-mb 300
+    python -m openvoice studio queue jobs.sqlite list
+Add --at with an ISO date/time before the -- separator for a scheduled job. Keep a worker running for scheduled execution. Multiple workers can claim independent jobs. The work command accepts --parallel, --timeout, --idle-timeout, --max-process-mb, --min-memory-mb, --min-battery and --max-temp. Install psutil for process and sensor features. Unsupported sensors cannot supply readings. Each job has a log and can be cancelled, reprioritized or retried. A pipeline JSON lists approved local production command arguments in a steps array.
+    python -m openvoice studio pipeline workflow.json --dry-run
+    python -m openvoice studio benchmark --engine flite --output benchmark.json
+
+GPU AND OLDER COMPUTERS
+Automatic mode tries compatible installed backends. Hardware-check probes FFmpeg encoders with real frames. FFmpeg can expose NVENC, AMF, Quick Sync, VA-API, VideoToolbox, Media Foundation or embedded video encoders. Real-job failure tries another encoder and ultimately software. OpenCV can accelerate supported OCR image filters with OpenCL. Optional PyOpenCL (install the opencl extra) accelerates eligible audio measurements, 16-bit PCM gain, pan and fades, and image compositing. An isolated EGL/OpenGL ES 2.0 shader can composite image layers on older drivers without PyOpenCL. A software OpenGL rasterizer is excluded from hardware selection.
+Piper uses its installed ONNX Runtime providers. Kitten checks its own ONNX session. Kokoro, Pocket and Coqui check PyTorch CUDA/ROCm, XPU or MPS and retry on CPU on supported paths. The local wheels dialog or studio gpu-runtime can install user-selected wheels in a chosen engine environment. Use an accelerator wheel appropriate for your installed driver, architecture and Python. A frozen main executable requires a compatible bundled worker or a separate source environment.
+    python -m openvoice hardware-check
+    python -m openvoice render -f book.txt -w book.wav --no-gpu
+Use Voices → Use available GPU to store the desktop preference. OPENMUKTI_GPU_MODE=cpu forces CPU for a process. Text editing, file operations, external system voices and unsupported kernels run on the CPU.
+
+DISTRIBUTION AND SECURITY
+Publish an MP3 chapter manifest containing title, language, publisher, optional author, and chapters with title/audio. Use studio daisy for a DAISY 2.02 navigation book. Use studio chapter-art to add CHAP/CTOC tags and images to an existing complete MP3. Use studio metadata for Dublin Core XML or JSON. Preflight reads real codec headers and compares them with named or custom destination rules. The optional upload command uses an explicitly configured rclone remote.
+    python -m openvoice studio daisy book.json speaking-book.zip
+    python -m openvoice studio metadata book.json catalog.xml
+    python -m openvoice studio preflight final.mp3 --preset spoken-mp3
+    python -m openvoice studio backup book.oamproj book.encrypted
+    python -m openvoice studio restore book.encrypted restored.oamproj
+Backups use a passphrase-derived key and authenticated AES-GCM encryption. The restore is committed only after authentication. Use keygen, sign and verify for Ed25519 signatures. Declarative text extensions require a trusted public key, valid signature and explicit allowed operations. Installed Python speech-engine plugins execute with ordinary Python privileges. Studio preferences can disable discovery of those plugins. The support command emits redacted diagnostic summaries. Configure model locks with studio models lock and OPENMUKTI_MODEL_LOCK. The pinned model hashes are checked before cached rendering. The versions command maintains explicitly installed, single-file portable application slots with rollback.
+
+ACCESSIBILITY AND LOCAL SERVICES
+Use the accessible manuscript and playback workspace for a browser-based, local editor. It includes named native controls, keyboard navigation, status announcements and audio playback. The desktop control view mirrors visible menus, buttons, text fields, sliders, tab pages and lists as labelled HTML controls. Use Refresh controls after opening or closing a native dialog. The displayed local address is private to the running session. Stop it from the desktop. Studio preferences control high contrast, touch targets, workspace sides, editor type and size, shortcuts, toolbar, local permissions and preview motion. Choose en, bn or es for available interface labels. A translation_file maps English labels to a custom JSON string catalog. Use studio translation-pack to extract editable source phrases. Enabling translate_missing uses an already installed Argos Translate English-to-target model. Native modal prompts and later-opened windows also use the current catalog. Dictated commands require separately installed Vosk, sounddevice and an explicitly selected local language model. Recording begins when you invoke the command. The illustration adapter can use a running local AUTOMATIC1111-compatible service upon an explicit studio illustrate request.
+
+DEVELOPER REFERENCE
+The CLI parser lives in openvoice/cli.py and openvoice/studio_cli.py. The desktop installs Studio through openvoice/studio_desk.py. A calling application can use render_text, render_multivoice, render_video, mix_session or render_score directly. For an additional trusted speech engine, implement SpeechEngine.render_wav and declare an openvoice.engines entry point. See openvoice/engines/base.py for settings and cancellation. Declarative text extensions support replace, normalize, case and trim operations. Example manifest:
+    {"version":1,"operations":[{"action":"replace","from":"teh","to":"the"}]}
+Run python -m openvoice studio --help and a command's --help for all arguments. Run python -m unittest discover -s tests -q in the source tree or select Run tests in Studio. Build with python build.py or choose a target with python build_select.py. The current feature-by-feature scope and recorded platform checks are in FEATURES_STATUS_CURRENT.md and VERIFICATION_1.1.md.
+
+HANDWRITING AND SCALING UPDATE
+The built-in Hangul compositor assembles 11,172 modern syllables from original jamo pen paths. Basic Han trajectories and script-aware reconstruction complement manual stroke packs. Strict mode requires the selected author pack. The interface_scale preference accepts 50 to 300 percent and combines with native monitor DPI. Cover and sound edits support keyboard undo/redo, and preference changes have history.
+
+DESKTOP LANGUAGE AND KEYBOARD CONTROLS
+Choose bn for Bengali or es for Spanish in Studio preferences. The release bundles more than 680 interface translations per language as well as 86 variable-message templates. Status messages preserve names, paths and counts. Controls and prompts in newly opened windows use the selected language. The accessible web editor also has Bengali and Spanish labels. Upstream tool output and unfamiliar messages can use an additional catalog or an installed offline language model.
+In Stroke Studio, move focus to the canvas with Tab. Use the arrow keys to move the pen, Shift with arrows for larger movements and Space to begin or end a stroke. Edit stroke coordinates also accepts precise normalized x, y and pressure values.
