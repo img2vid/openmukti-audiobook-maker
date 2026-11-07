@@ -20,6 +20,22 @@ class NativeReleaseFixTests(unittest.TestCase):
         self.assertEqual(ci_native.installed_ips_fmris('not installed',
                                                        ['runtime/python-311']), [])
 
+    def test_ips_python_packages_match_active_omnios_runtime(self):
+        packages = ci_native.ips_packages_for_python(3, 13)
+        self.assertIn('runtime/python-313', packages)
+        self.assertIn('library/python/tkinter-313', packages)
+        self.assertNotIn('runtime/python-311', packages)
+
+        inventory = (
+            'pkg://omnios/runtime/python-313@3.13.6-151054 i--\\n'
+            'pkg://omnios/runtime/python-311@3.11.12-151054 i--\\n'
+            'pkg:/image/tesseract@5.5 i--\\n'
+        ).replace('\\n', '\n')
+        self.assertEqual(
+            ci_native.installed_ips_fmris(inventory, packages),
+            ['pkg://omnios/runtime/python-313@3.13.6-151054',
+             'pkg:/image/tesseract@5.5'])
+
     def test_dragonfly_chooses_xz_not_unsupported_zstd(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
