@@ -35,10 +35,11 @@ def _rpaths(path: Path) -> list[str]:
 def _resolve_library(reference: str, owner: Path, executable: Path) -> Path:
     if reference.startswith(_SYSTEM_ROOTS):
         return Path(reference)
-    if reference.startswith('/'):
-        candidate = Path(reference)
-        if candidate.is_file():
-            return candidate.resolve()
+    # Use native absolute-path detection on both Unix and Windows.
+    # macOS production paths and Windows test fixtures must resolve equally.
+    candidate = Path(reference)
+    if candidate.is_absolute() and candidate.is_file():
+        return candidate.resolve()
     if reference.startswith('@loader_path/'):
         candidate = owner.parent / reference.removeprefix('@loader_path/')
         if candidate.is_file():
