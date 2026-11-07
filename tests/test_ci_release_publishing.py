@@ -53,5 +53,20 @@ class ReleasePublicationTests(unittest.TestCase):
         self.assertFalse(value['prerelease'])
 
 
+    def test_release_upload_survives_skipped_optional_native_job(self):
+        # In run #16 all required platforms passed, but the optional
+        # additional-native-runners job was skipped. Without always() the
+        # release-upload matrix was skipped as well.
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / '.github/workflows/build.yml').read_text(encoding='utf-8')
+        create = workflow.split('  release-create:\n', 1)[1].split('  release-upload:\n', 1)[0]
+        upload = workflow.split('  release-upload:\n', 1)[1].split('  release-finalize:\n', 1)[0]
+        self.assertIn("if: ${{ always() && needs.release-create.result == 'success' }}",
+                      upload)
+        self.assertNotIn('--draft --prerelease', create)
+        self.assertIn('              --prerelease', create)
+
+
+
 if __name__=='__main__':
     unittest.main()
