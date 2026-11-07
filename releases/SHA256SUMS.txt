@@ -1,0 +1,2 @@
+f45ab349e2c0e1b7d901b57607fd427a2def313caaf9264ba8e97f9c35e90e15  Openmukti-1.1.2-linux-x86_64-system-runtime.tar.xz
+520596e0f8f0556c0169ba06a69720203272091749e20f4a13c0c6630bf7026b  Openmukti-1.1.2-linux-x86_64-system-runtime.deb

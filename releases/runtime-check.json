@@ -1,0 +1,40 @@
+{
+  "dictionary": true,
+  "ocr": {
+    "available": true,
+    "languages": [
+      "eng",
+      "osd"
+    ],
+    "message": "",
+    "executable": "/usr/bin/tesseract"
+  },
+  "media": {
+    "ffmpeg": {
+      "available": true,
+      "bundled": false,
+      "path": "/usr/bin/ffmpeg",
+      "version": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+    },
+    "ffprobe": {
+      "available": true,
+      "bundled": false,
+      "path": "/usr/bin/ffprobe",
+      "version": "ffprobe version 6.1.1-3ubuntu5 Copyright (c) 2007-2023 the FFmpeg developers"
+    }
+  },
+  "pdf_renderer": true,
+  "providers": {
+    "tkinter": true,
+    "pypdf": true,
+    "striprtf": true,
+    "PIL": true,
+    "numpy": true,
+    "cv2": false,
+    "piper": false
+  },
+  "embedded_runtime": false,
+  "inventory_only": true,
+  "checks": {},
+  "ok": false
+}

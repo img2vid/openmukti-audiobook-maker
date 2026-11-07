@@ -1,0 +1,71 @@
+{
+  "application": "Openmukti Audiobook Maker",
+  "version": "1.1.2",
+  "host": "linux",
+  "host_description": "#1 SMP Tue Oct 20 21:56:04 UTC 2026",
+  "architecture": "x86_64",
+  "profile": "system",
+  "python_embedded": false,
+  "libc": [
+    "glibc",
+    "2.39"
+  ],
+  "runtime_verified": false,
+  "results": {
+    "tar": {
+      "status": "built",
+      "file": "Openmukti-1.1.2-linux-x86_64-system-runtime.tar.xz",
+      "bytes": 3488232,
+      "sha256": "f45ab349e2c0e1b7d901b57607fd427a2def313caaf9264ba8e97f9c35e90e15",
+      "runtime_verified": false
+    },
+    "deb": {
+      "status": "built",
+      "file": "Openmukti-1.1.2-linux-x86_64-system-runtime.deb",
+      "bytes": 3498920,
+      "sha256": "520596e0f8f0556c0169ba06a69720203272091749e20f4a13c0c6630bf7026b",
+      "runtime_verified": false
+    }
+  },
+  "status": "built",
+  "system_capabilities": {
+    "dictionary": true,
+    "ocr": {
+      "available": true,
+      "languages": [
+        "eng",
+        "osd"
+      ],
+      "message": "",
+      "executable": "/usr/bin/tesseract"
+    },
+    "media": {
+      "ffmpeg": {
+        "available": true,
+        "bundled": false,
+        "path": "/usr/bin/ffmpeg",
+        "version": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+      },
+      "ffprobe": {
+        "available": true,
+        "bundled": false,
+        "path": "/usr/bin/ffprobe",
+        "version": "ffprobe version 6.1.1-3ubuntu5 Copyright (c) 2007-2023 the FFmpeg developers"
+      }
+    },
+    "pdf_renderer": true,
+    "providers": {
+      "tkinter": true,
+      "pypdf": true,
+      "striprtf": true,
+      "PIL": true,
+      "numpy": true,
+      "cv2": false,
+      "piper": false
+    },
+    "embedded_runtime": false,
+    "inventory_only": true,
+    "checks": {},
+    "ok": false
+  }
+}
